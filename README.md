@@ -12,6 +12,7 @@ SpecRefit is a planned local-first workspace for inspecting, validating and adap
 - [Configuration and execution](docs/architecture/configuration-and-execution.md): rules, references, deterministic output and contract comparisons.
 - [ROADMAP.md](ROADMAP.md): sequencing, acceptance criteria and current next steps.
 - [Decisions](docs/architecture/decisions.md): accepted choices, provisional proposals and questions still requiring a decision.
+- [Project handoff](docs/project-handoff.md): repository locations, branding, hosting and how to resume development.
 
 Read these documents before implementing features. They are intended to make a fresh clone sufficient to resume development without access to the original design conversation.
 

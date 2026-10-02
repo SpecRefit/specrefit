@@ -1,0 +1,29 @@
+# Project handoff
+
+Recorded 2026-10-02. The agreed product context lives in this repository; the original planning chat is not required to start implementation. Begin with AGENTS.md and its required reading list. Requirements and decisions take precedence over exploratory visual mockups or earlier chat proposals.
+
+## Repositories
+
+| Repository | Purpose | Existing checkout on the owner's workstation |
+| --- | --- | --- |
+| [SpecRefit/specrefit](https://github.com/SpecRefit/specrefit) | Product requirements, architecture, roadmap and future implementation | `D:\GitHub\specrefit` |
+| [SpecRefit/specrefit.github.io](https://github.com/SpecRefit/specrefit.github.io) | Static landing page, logo assets and GitHub Pages configuration | `D:\GitHub\specrefit.github.io` |
+| [SpecRefit/.github](https://github.com/SpecRefit/.github) | Organization profile in `profile/README.md` | `D:\GitHub\specrefit-profile` |
+
+These are ordinary independent checkouts, not worktrees. The profile repository is presentation infrastructure, not a separate product module. GitHub pins `specrefit` on the organization overview; the onboarding tasks were hidden to make the pinned section visible.
+
+## Branding and hosting
+
+The approved logo is variant 2: blue and teal. The website repository stores the full transparent wordmark at `assets/specrefit-logo.png`, the vector symbol at `assets/mark.svg`, and the compact transparent 256 × 256 PNG avatar at `assets/specrefit-avatar.png` (3,638 bytes). Its README records the wordmark provenance. The profile repository contains a copy of the full wordmark.
+
+The compact avatar file is committed and pushed. Updating GitHub's organization avatar is a separate profile action, not something publishing this PNG performs automatically. The last attempted automated upload was blocked by the Chrome extension's local-file access setting; successful avatar replacement has not been verified. This does not block product development.
+
+The domain is managed at TransIP. The landing page is hosted by GitHub Pages from `main` at the root of the website repository, with `CNAME` set to `specrefit.dev` and HTTPS enabled. `www.specrefit.dev` redirects to the main domain. `play.specrefit.dev` is reserved for the future browser editor and has no editor deployed yet. No VPS or contract-processing server is part of this setup. See the website README for publishing and preview instructions; verify current DNS before making infrastructure changes.
+
+## Resume development
+
+Open or clone the product repository as the primary folder of a new local project/chat. Its AGENTS.md carries the testing, WSL, storage, safety and handoff requirements. No application code or build/test toolchain exists yet; the Apache 2.0 license is already selected and committed.
+
+The next task is milestone 1 of ROADMAP.md: validate the proposed shared TypeScript/browser/CLI stack and libraries with multi-file references, comment preservation, bundling and byte-identical output. Record the evidence and unresolved gaps before adopting the stack. Do not interpret the initial JSON-preference workflow as permission to discard the remaining product requirements.
+
+GitKraken originally needed separate OAuth approval for this new GitHub organization. The owner reported resolving that access issue. If authentication fails in a new environment, diagnose that client's credentials; do not change repository visibility or weaken organization-wide app restrictions as a workaround.
