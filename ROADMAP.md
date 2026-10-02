@@ -12,7 +12,9 @@ This roadmap sequences implementation; it does not remove the requirements in [p
 - [x] Derive coordinated browser/desktop build versions from SemVer Git tags, with commit-based development labels and tag-build validation. See [versioning](docs/architecture/versioning.md). Release publication remains open.
 - [x] Verify the mandatory GitHub Actions PR build gate (type checks, engine tests and viewer build); [first successful run](https://github.com/SpecRefit/specrefit/actions/runs/37057588856). The active main ruleset requires the GitHub Actions `Build` check on an up-to-date branch and retains code-owner approval.
 - [ ] Complete and verify CI and native OS acceptance.
-- [x] Verify the first automatic main development publication: [successful run](https://github.com/SpecRefit/specrefit/actions/runs/37061962174) and [latest downloads](https://github.com/SpecRefit/specrefit/releases/latest). Native Windows/macOS/CLI/Maven packages remain future work.
+- [x] Verify the first automatic main development publication: [successful run](https://github.com/SpecRefit/specrefit/actions/runs/37061962174) and [development preview](https://github.com/SpecRefit/specrefit/releases/tag/development). Native Windows/macOS/CLI/Maven packages remain future work.
+- [x] Deploy and verify the read-only playground at play.specrefit.dev; browser checks now run in CI. See [deployment evidence](docs/architecture/playground.md).
+- [ ] Verify rolling preview replacement after merging its publisher update; the existing downloads were migrated to one prerelease and old development tags removed.
 - [ ] Deliver a usable product release.
 
 The separate landing page is already published at [specrefit.dev](https://specrefit.dev). It is not an application release.
@@ -21,7 +23,7 @@ The separate landing page is already published at [specrefit.dev](https://specre
 
 The owner authorized read/inspect before transformations. Implemented: local YAML/JSON import, folder structure, grouped/searchable operations, parameters with inheritance, bodies/responses/security, schemas and recursive JSON Pointer references, exact missing-document supply, source inspection and diagnostics. Engine checks cover representative 3.0.4/3.1.2/3.2.0 fixtures. Large-contract regressions cover over 12 MB and 1,200 operations; the owner-supplied GitHub REST contract also opens in all three tested browsers. Browser/Node and Electron/Node inspection parity is verified; the Linux development distribution includes its runtime. See [exact evidence and support boundaries](docs/architecture/viewer.md) and [commands](README.md#development-status).
 
-The viewer deliberately reports unimplemented schema scope/anchor and dialect behavior rather than guessing. ZIP import, persisted project mappings, complete validation, transformations, CLI and native acceptance remain open. Next actions: verify the hosted playground after owner merge; implement the first JSON-preference feasibility experiment with agreed media-type semantics; broaden reference/dialect coverage and native distribution acceptance. See [playground publication](docs/architecture/playground.md) for deployment and download channel boundaries. Review approval remains required and must not be bypassed.
+The viewer deliberately reports unimplemented schema scope/anchor and dialect behavior rather than guessing. ZIP import, persisted project mappings, complete validation, transformations, CLI and native acceptance remain open. Next actions: implement the first JSON-preference feasibility experiment with agreed media-type semantics; broaden reference/dialect coverage and native distribution acceptance. See [playground publication](docs/architecture/playground.md) for deployment and download channel boundaries. Review approval remains required and must not be bypassed.
 
 ## 1. Feasibility and foundational decisions
 

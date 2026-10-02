@@ -14,12 +14,12 @@ Dependency review before adoption: GitHub-maintained `actions/upload-pages-artif
 
 ## Website and download channels
 
-The landing page links to `https://github.com/SpecRefit/specrefit/releases/latest`, which currently denotes the latest successful development build. Available files are browser assets, an experimental Linux x64 runtime bundle, a manifest and checksums. Stable releases and Windows/macOS/CLI/Maven packages must not be advertised as available before implementation and publication.
+The landing page links to `https://github.com/SpecRefit/specrefit/releases/tag/development`, which currently denotes the latest successful development build. Available files are browser assets, an experimental Linux x64 runtime bundle, a manifest and checksums. Stable releases and Windows/macOS/CLI/Maven packages must not be advertised as available before implementation and publication.
 
-GitHub has only one Latest release pointer. Before stable release publication, define distinct persistent development and stable download links and update the publisher and website together. Do not let a later development build silently replace a link advertised as stable. Maven Central publication remains a separate future step.
+GitHub Latest is reserved for future stable releases. One rolling development prerelease uses the fixed development tag; the website links directly to it. Maven Central publication remains a separate future step.
 
 ## Acceptance
 
 Before merge, run the documented WSL build and browser checks and inspect the workflow permissions, event guards and diff. After the authorized main update, verify the Actions deployment, HTTPS response, displayed version, example navigation and local file import on the hosted site. DNS and Pages setup alone do not establish a working deployment. Keep the landing page's hosted-preview link unavailable until that verification succeeds.
 
-Local verification on 2026-10-02: WSL type check/build, 30 engine tests, 10 version tests, 9 publication tests, 21 real-browser cases and both packaged/development Electron cases passed. The website was checked at 1440px and 390px in light/dark themes, including download destination and keyboard interaction. First hosted acceptance still requires a main deployment.
+Local verification on 2026-10-02: WSL type check/build, 30 engine tests, 10 version tests, 9 publication tests, 21 real-browser cases and both packaged/development Electron cases passed. The website was checked at 1440px and 390px in light/dark themes, including download destination and keyboard interaction. Hosted acceptance subsequently passed after [the first deployment](https://github.com/SpecRefit/specrefit/actions/runs/37063276439): HTTPS, correct build commit, example navigation, local contract import and absence of contract upload were checked in Chromium under WSL.

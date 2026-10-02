@@ -43,60 +43,129 @@ test('manifest traversal and incorrect checksum lists are rejected', async t => 
   await assert.rejects(verifyInventory(dir, build.commit), /file set/);
 });
 
-function service({ failUpload = false, moveMain = false, published = false } = {}) {
+function service({ published = false, failUpload = false, comparison = 'identical', oldCommit = build.commit } = {}) {
   const assets = ['web.tar.gz', 'desktop.tar.gz', 'manifest.json', 'SHA256SUMS'].map((name, i) => ({ name, size: 100 + i, sha256: String(i).repeat(64) }));
-  let release = published ? { id: 7, draft: false, assets: assets.map((a, i) => ({ ...a, id: i + 1, state: 'uploaded', digest: `sha256:${a.sha256}` })), html_url: 'https://example.invalid/development' } : null;
+  let release = published ? { id: 7, tag_name: 'development', target_commitish: oldCommit, prerelease: true, draft: false, assets: assets.map((a, i) => ({ ...a, id: i + 1, state: 'uploaded', digest: `sha256:${a.sha256}` })), html_url: 'https://example.invalid/development' } : null;
+  let ref = published ? { object: { sha: oldCommit } } : null;
+  let nextId = 10;
   const events = [];
   const api = async (method, path, data) => {
     events.push({ method, path, data });
     if (path.endsWith('...main')) return { status: 'ahead' };
-    if (path.startsWith('/compare/')) return { status: moveMain ? 'ahead' : 'identical' };
-    if (path === '/releases/latest') return moveMain ? { tag_name: 'develop-' + 'b'.repeat(40) } : null;
-    if (release) Object.assign(release, { tag_name: `develop-${build.commit}`, target_commitish: build.commit });
-    if (path.startsWith('/releases/tags/')) return release && structuredClone(release);
-    if (method === 'POST') { release = { ...data, id: 7, draft: true, assets: [], html_url: 'https://example.invalid/development' }; assert.equal(data.make_latest, 'false'); return structuredClone(release); }
-    if (method === 'GET') return structuredClone(release);
-    if (method === 'PATCH') { Object.assign(release, data); return structuredClone(release); }
-    throw new Error('Unexpected mutation');
+    if (path.startsWith('/compare/')) return { status: comparison };
+    if (path.startsWith('/releases?')) return release ? [structuredClone(release)] : [];
+    if (path === '/releases/tags/development') return release && !release.draft ? structuredClone(release) : null;
+    if (path === '/git/ref/tags/development') return ref;
+    if (path === '/git/refs' || path === '/git/refs/tags/development') { ref = { object: { sha: data.sha } }; return ref; }
+    if (method === 'POST' && path === '/releases') {
+      assert.equal(release, null, 'Must reuse the one existing preview');
+      release = { ...data, id: 7, assets: [], html_url: 'https://example.invalid/development' }; return structuredClone(release);
+    }
+    if (method === 'DELETE' && path.startsWith('/releases/assets/')) {
+      assert(release.draft, 'Never mutate publicly available assets');
+      release.assets = release.assets.filter(a => a.id !== Number(path.split('/').at(-1))); return null;
+    }
+    if (path === '/releases/7' && method === 'GET') return structuredClone(release);
+    if (path === '/releases/7' && method === 'PATCH') { Object.assign(release, data); return structuredClone(release); }
+    throw new Error(`Unexpected API operation ${method} ${path}`);
   };
   const upload = async (_id, asset) => {
+    assert(release.draft);
     events.push({ upload: asset.name });
     if (failUpload && asset.name === 'desktop.tar.gz') throw new Error('Upload failed');
-    release.assets.push({ id: release.assets.length + 1, ...asset, state: 'uploaded', digest: `sha256:${asset.sha256}` });
+    release.assets.push({ id: nextId++, ...asset, state: 'uploaded', digest: `sha256:${asset.sha256}` });
   };
-  return { options: { build, assets, api, upload, runUrl: 'https://example.invalid/run' }, events, release: () => release };
+  return { options: { build, assets, api, upload, runUrl: 'https://example.invalid/run' }, events, release: () => release, ref: () => ref };
 }
-test('latest changes only after every artifact has been uploaded and checked', async () => {
+
+test('one verified prerelease is published without touching stable Latest', async () => {
   const s = service(); await publishDevelopment(s.options);
   assert.equal(s.events.filter(e => e.upload).length, 4);
-  assert.equal(s.events.at(-1).data.make_latest, 'true');
-  assert.equal(s.events.at(-1).data.draft, false);
+  assert.equal(s.release().tag_name, 'development');
+  assert.equal(s.release().prerelease, true);
+  assert.equal(s.release().draft, false);
+  assert.equal(s.ref().object.sha, build.commit);
+  assert(s.events.filter(e => e.data?.make_latest).every(e => e.data.make_latest === 'false'));
+  assert(!s.events.some(e => e.path?.includes('latest')));
 });
-test('failed uploads leave the previous latest untouched and the new build in draft', async () => {
+
+test('a newer build replaces the same preview and moves only its dedicated tag', async () => {
+  const s = service({ published: true, oldCommit: 'b'.repeat(40), comparison: 'behind' });
+  s.release().assets[0].digest = 'sha256:old';
+  s.release().assets.push({ id: 99, name: 'obsolete.zip' });
+  await publishDevelopment(s.options);
+  assert.equal(s.release().id, 7);
+  assert.equal(s.release().target_commitish, build.commit);
+  assert.equal(s.ref().object.sha, build.commit);
+  assert.deepEqual(s.events.filter(e => e.upload).map(e => e.upload), ['web.tar.gz']);
+  assert.equal(s.release().assets.length, 4);
+  assert(!s.events.some(e => e.method === 'POST' && e.path === '/releases'));
+});
+
+test('failed upload remains a recoverable draft and does not move the tag', async () => {
   const s = service({ failUpload: true });
   await assert.rejects(publishDevelopment(s.options), /Upload failed/);
   assert.equal(s.release().draft, true);
-  assert.equal(s.events.some(e => e.method === 'PATCH'), false);
+  assert.equal(s.ref(), null);
 });
-test('a newer main commit prevents an older build from replacing latest', async () => {
-  const s = service({ moveMain: true });
-  await publishDevelopment(s.options);
-  assert.equal(s.events.at(-1).data.make_latest, 'false');
-  assert.equal(s.release().draft, false); // The older merge still gets its own downloads.
+
+test('older builds cannot overwrite the newer preview, even an interrupted draft', async () => {
+  for (const draft of [true, false]) {
+    const s = service({ published: true, comparison: 'ahead', oldCommit: 'b'.repeat(40) });
+    s.release().draft = draft;
+    await publishDevelopment(s.options);
+    assert(!s.events.some(e => e.upload || e.method !== 'GET'));
+  }
 });
-test('rerunning a published commit verifies assets without replacing them', async () => {
+
+test('rerunning a complete published build does not withdraw or upload it again', async () => {
   const s = service({ published: true }); await publishDevelopment(s.options);
-  assert.equal(s.events.some(e => e.upload || e.method === 'DELETE' || e.method === 'POST'), false);
+  assert(!s.events.some(e => e.upload || e.method !== 'GET'));
 });
-test('remote checksum mismatch cannot become latest', async () => {
-  const s = service({ published: true }); s.release().assets[0].digest = 'sha256:wrong';
+
+test('remote checksum mismatch leaves output hidden until verified', async () => {
+  const s = service();
+  const upload = s.options.upload;
+  s.options.upload = async (...args) => { await upload(...args); s.release().assets.at(-1).digest = 'sha256:wrong'; };
   await assert.rejects(publishDevelopment(s.options), /incomplete or have different checksums/);
-  assert.equal(s.events.some(e => e.method === 'PATCH'), false);
+  assert.equal(s.release().draft, true);
+  assert.equal(s.ref(), null);
 });
-test('an interrupted draft resumes without re-uploading verified files', async () => {
-  const s = service({ published: true }); s.release().draft = true;
-  s.release().assets.pop();
+
+test('draft recovery finds the hidden release and uploads only missing files', async () => {
+  const s = service({ published: true }); s.release().draft = true; s.release().assets.pop();
   await publishDevelopment(s.options);
   assert.deepEqual(s.events.filter(e => e.upload).map(e => e.upload), ['SHA256SUMS']);
   assert.equal(s.release().draft, false);
+});
+
+test('stable, immutable and diverged releases are never modified', async () => {
+  for (const mode of ['stable', 'immutable', 'diverged']) {
+    const s = service({ published: true, comparison: mode === 'diverged' ? 'diverged' : 'identical' });
+    if (mode === 'stable') s.release().prerelease = false;
+    if (mode === 'immutable') s.release().immutable = true;
+    await assert.rejects(publishDevelopment(s.options));
+    assert(!s.events.some(e => e.upload || e.method !== 'GET'));
+  }
+});
+
+test('tag or final publication failure can resume without re-uploading assets', async () => {
+  for (const phase of ['tag', 'publish']) {
+    const s = service({ published: true, oldCommit: 'b'.repeat(40), comparison: 'behind' });
+    const api = s.options.api;
+    let failed = false;
+    s.options.api = async (method, path, data) => {
+      if (!failed && ((phase === 'tag' && path === '/git/refs/tags/development') ||
+          (phase === 'publish' && method === 'PATCH' && data?.draft === false))) {
+        failed = true; throw new Error('Transient failure');
+      }
+      return api(method, path, data);
+    };
+    await assert.rejects(publishDevelopment(s.options), /Transient failure/);
+    assert.equal(s.release().draft, true);
+    await publishDevelopment(s.options);
+    assert.equal(s.release().draft, false);
+    assert.equal(s.ref().object.sha, build.commit);
+    assert(!s.events.some(e => e.upload));
+  }
 });

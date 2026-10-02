@@ -134,7 +134,7 @@ jobs:
         with:
           name: development-downloads
           path: artifacts/development/
-      - name: Publish complete development build as latest
+      - name: Replace rolling development preview
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/publish-development.mjs

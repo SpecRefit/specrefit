@@ -4,37 +4,47 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { verifyInventory } from './development-artifacts.mjs';
 
-/** Upload into a draft; serialize callers so an older build cannot replace newer latest. */
+/** One rolling prerelease. Serialize callers; never read or modify stable Latest. */
 export async function publishDevelopment({ build, assets, api, upload, runUrl }) {
   const main = await api('GET', `/compare/${build.commit}...main`);
   if (!['ahead', 'identical'].includes(main.status)) throw new Error('Development commit is not on main history.');
-  const tag = `develop-${build.commit}`;
+  const tag = 'development';
   let release = await api('GET', `/releases/tags/${tag}`);
-  const body = `Automated development build — not a stable product release.\n\nVersion: \`${build.version}\`\nCommit: \`${build.commit}\`\nBuild: ${runUrl}\n\nDownloads include every artifact produced by this build, a manifest and SHA-256 checksums. Currently: static browser assets and an experimental Linux x64 desktop bundle with its runtime. Linux system libraries are still required; Windows/macOS/CLI/Maven packages do not exist yet.\n\nGitHub's Latest marker identifies the newest complete development download set. This is not a stability or native-platform acceptance claim.`;
-  if (!release) release = await api('POST', '/releases', { tag_name: tag, target_commitish: build.commit, name: `Development build ${build.commit.slice(0, 12)}`, body, draft: true, prerelease: false, make_latest: 'false' });
-  if (release.tag_name !== tag || release.target_commitish !== build.commit) throw new Error('Existing development release does not identify this commit.');
-  if (release.immutable && release.draft) throw new Error('Cannot populate an immutable draft.');
+  // The tag endpoint may omit drafts; authenticated listing also finds interrupted uploads.
+  for (let page = 1; !release; page++) {
+    const releases = await api('GET', `/releases?per_page=100&page=${page}`);
+    release = releases.find(r => r.tag_name === tag);
+    if (releases.length < 100) break;
+  }
+  if (release) {
+    if (release.tag_name !== tag || !release.prerelease || release.immutable || !/^[0-9a-f]{40}$/.test(release.target_commitish))
+      throw new Error('Existing preview must be a mutable prerelease with an exact commit.');
+    const comparison = await api('GET', `/compare/${build.commit}...${release.target_commitish}`);
+    if (comparison.status === 'ahead') return release.html_url;
+    if (!['behind', 'identical'].includes(comparison.status)) throw new Error('Development history diverged; preview was not changed.');
+  }
+  const body = `Rolling development preview — not a stable release. Replaced after successful main builds.\n\nVersion: \`${build.version}\`\nCommit: \`${build.commit}\`\nBuild: ${runUrl}\n\nDownloads contain the built artifacts, manifest and SHA-256 checksums. Currently: static browser assets and an experimental Linux x64 desktop bundle including its runtime. Linux system libraries are required; Windows/macOS/CLI/Maven packages remain planned.\n\nLatest is reserved for stable releases. This preview may be briefly unavailable during replacement; failed publication can be retried.`;
+  const metadata = { target_commitish: build.commit, name: 'Development preview', body, prerelease: true, make_latest: 'false' };
   const matches = (remote, local) => remote?.state === 'uploaded' && remote.size === local.size && remote.digest === `sha256:${local.sha256}`;
-  if (release.draft) {
-    for (const old of release.assets) {
-      const desired = assets.find(a => a.name === old.name);
-      if (!desired || !matches(old, desired)) await api('DELETE', `/releases/assets/${old.id}`);
-    }
-    for (const asset of assets) {
-      if (!matches(release.assets.find(a => a.name === asset.name), asset)) await upload(release.id, asset);
-    }
+  const complete = r => r.assets.length === assets.length && assets.every(a => matches(r.assets.find(r => r.name === a.name), a));
+  if (release && !release.draft && release.target_commitish === build.commit && complete(release)) return release.html_url;
+  // Withdraw the public preview before changing assets: never advertise a mixed build.
+  if (release) release = await api('PATCH', `/releases/${release.id}`, { ...metadata, draft: true });
+  else release = await api('POST', '/releases', { ...metadata, tag_name: tag, draft: true });
+  for (const old of release.assets) {
+    const desired = assets.find(a => a.name === old.name);
+    if (!desired || !matches(old, desired)) await api('DELETE', `/releases/assets/${old.id}`);
+  }
+  for (const asset of assets) {
+    if (!matches(release.assets.find(a => a.name === asset.name), asset)) await upload(release.id, asset);
   }
   release = await api('GET', `/releases/${release.id}`);
-  if (release.assets.length !== assets.length || assets.some(a => !matches(release.assets.find(r => r.name === a.name), a)))
-    throw new Error('Remote development assets are incomplete or have different checksums; latest was not changed.');
-  const latest = await api('GET', '/releases/latest');
-  let promote = true;
-  if (/^develop-[0-9a-f]{40}$/.test(latest?.tag_name ?? '')) {
-    const comparison = await api('GET', `/compare/${build.commit}...${latest.tag_name.slice(8)}`);
-    if (!['ahead', 'behind', 'identical'].includes(comparison.status)) throw new Error('Development history diverged or could not be compared; latest was not changed.');
-    promote = comparison.status !== 'ahead';
-  }
-  await api('PATCH', `/releases/${release.id}`, { draft: false, prerelease: false, make_latest: promote ? 'true' : 'false', body });
+  if (!complete(release)) throw new Error('Remote preview assets are incomplete or have different checksums; preview remains a draft.');
+  // target_commitish does not move an existing tag. Only this dedicated preview tag moves.
+  const ref = await api('GET', `/git/ref/tags/${tag}`);
+  if (ref) await api('PATCH', `/git/refs/tags/${tag}`, { sha: build.commit, force: true });
+  else await api('POST', '/git/refs', { ref: `refs/tags/${tag}`, sha: build.commit });
+  release = await api('PATCH', `/releases/${release.id}`, { ...metadata, draft: false });
   return release.html_url;
 }
 
@@ -55,7 +65,7 @@ async function main() {
     if (!response.ok) throw new Error(`GitHub request failed: HTTP ${response.status}. No credentials or response body logged.`);
     return response.status === 204 ? null : response.json();
   };
-  const api = (method, path, data) => request(`https://api.github.com/repos/${env.GITHUB_REPOSITORY}${path}`, { method, headers: { 'Content-Type': 'application/json' }, ...(data ? { body: JSON.stringify(data) } : {}) }, method === 'GET' && (path.startsWith('/releases/tags/') || path === '/releases/latest'));
+  const api = (method, path, data) => request(`https://api.github.com/repos/${env.GITHUB_REPOSITORY}${path}`, { method, headers: { 'Content-Type': 'application/json' }, ...(data ? { body: JSON.stringify(data) } : {}) }, method === 'GET' && (path.startsWith('/releases/tags/') || path === '/git/ref/tags/development'));
   const upload = (id, asset) => request(`https://uploads.github.com/repos/${env.GITHUB_REPOSITORY}/releases/${id}/assets?name=${encodeURIComponent(asset.name)}`, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: asset.bytes });
   console.log(await publishDevelopment({ build, assets, api, upload, runUrl: `https://github.com/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}` }));
 }
