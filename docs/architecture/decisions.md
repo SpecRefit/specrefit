@@ -49,7 +49,7 @@ On 2026-10-02 the owner superseded the per-commit/Latest development policy: kee
 - Concrete supported OS/browser/CPU versions, runtime packaging, signed artifacts, release process and update verification.
 - Credentials for optional fetching, safe retrieval scope/redirects, resource limits and archive policy.
 - SonarQube setup and thresholds; CI runner matrix and supply-chain checks.
-- Default format for mixed-format bundled input, output destination conventions and failure recovery across multiple writes.
+- Output destination conventions and failure recovery across multiple writes. The bundle preview offers an explicit YAML/JSON choice, initially YAML for comment retention.
 - Detailed semantics and timing for authentication preference rules, model merging and reference cleanup. These were exploratory product ideas and must not be assumed safe or fully specified.
 
 ## Superseded directions
@@ -63,3 +63,7 @@ The owner requested the playground and development download availability on the 
 ## First transformations (2026-10-02)
 
 The owner authorized media selection and inline schema extraction in one PR. Use exact user-selected media keys, deterministic suggested names with saved overrides, ordered rules and explicit preconditions. The shared engine generates actual preview bytes; UI wrappers do not implement transformation semantics. The existing yaml syntax tree is used for retained-format preview serialization and comment movement, without new dependencies. [Scope and evidence](transformations.md) distinguish this slice from full configuration, export, bundling, duplicate-model merging and CLI support.
+
+## Bundling and system appearance (2026-10-02)
+
+The owner authorized implementing the general external-reference output option next. The shared engine now produces a single YAML/JSON preview after ordered rules, with deterministic component names, internal recursive references and explicit blocking of unsupported relocation semantics. See [bundling scope](bundling.md). Existing yaml syntax nodes preserve associated comments; no new dependency or privileged file API was introduced. Safe export remains separate. For appearance, the owner chose the website's simple Theme ◐ toggle instead of a selection menu. The editor starts with the system preference and follows OS changes until manually switched. The override lasts for the page session; reload follows the system again. No browser storage or network request is involved.

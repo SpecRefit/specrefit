@@ -1,6 +1,6 @@
 # First transformation preview
 
-The owner authorized one PR combining explicit media-type selection and extraction of inline schemas on 2026-10-02. This implements a bounded preview in the shared engine and browser/Electron editor. It does not complete the full configuration, export, bundling or CLI workflow.
+The owner authorized one PR combining explicit media-type selection and extraction of inline schemas on 2026-10-02. This implements a bounded preview in the shared engine and browser/Electron editor. It does not complete the full configuration, export or CLI workflow. The subsequent general [bundling preview](bundling.md) has its own documented scope.
 
 ## User workflow
 
@@ -26,7 +26,7 @@ The input inspection limits still apply. Rule configuration is limited to 128 ru
 
 ## General bundling option
 
-The owner also requested a contract-wide output option: **Bundle external references into one file**. This belongs to output settings, independent of media selection and schema extraction. It remains planned. Missing required documents block bundling; relative paths, duplicate names and recursive relationships must retain meaning. Recursive models may use internal references. Do not show a working bundling control before the bundler exists.
+The owner also requested a contract-wide output option: **Bundle external references into one file**. This belongs to output settings, independent of media selection and schema extraction. It is now implemented in the [bundling preview](bundling.md). Missing required documents block bundling; relative paths, duplicate names and recursive relationships must retain meaning. Recursive models may use internal references. The control is available in Rules and preview, under Output.
 
 ## Verification
 

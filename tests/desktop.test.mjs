@@ -20,6 +20,12 @@ test('sandboxed Electron uses the same worker and UI without renderer privileges
     const input = { entry: 'petstore.yaml', sources };
     const report = await page.evaluate(input => new Promise((resolve, reject) => { const w = new Worker('./worker.js', { type: 'module' }); w.onmessage = e => { w.terminate(); resolve(e.data.report); }; w.onerror = reject; w.postMessage(input); }), input);
     assert.deepEqual(report, inspect(input));
+    for (const format of ['yaml', 'json']) {
+      const config = { version: 1, rules: [], output: { bundle: true, format } };
+      const bundled = await page.evaluate(({input,config}) => new Promise((resolve,reject) => {const w=new Worker('./worker.js',{type:'module'});w.onmessage=e=>{w.terminate();resolve(e.data.preview)};w.onerror=reject;w.postMessage({action:'transform',input,config});}), {input,config});
+      assert.deepEqual(bundled, transform(input,config));
+      assert.equal(bundled.files.length, 1);
+    }
     const transformInput = { entry: 'api.yaml', sources: [{ id: 'api.yaml', text: await readFile('tests/fixtures/transform.yaml', 'utf8') }] };
     const target = { document: 'api.yaml', pointer: '/paths/~1pets/post/requestBody/content' };
     const schemaPointer = target.pointer + '/application~1json/schema';
