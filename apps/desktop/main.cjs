@@ -42,6 +42,7 @@ app.whenReady().then(() => {
     callback({ cancel: !details.url.startsWith(allowedPrefix) });
   });
   window = new BrowserWindow({
+    icon: path.join(__dirname, 'icons/icon.png'),
     width: 1320, height: 900, minWidth: 480, minHeight: 500, backgroundColor: '#fafcfd',
     title: 'SpecRefit · Contract inspector',
     webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: false, preload: path.join(__dirname, 'preload.cjs') },

@@ -21,7 +21,7 @@ test('directory preflight rejects later source aliases and linked folders before
   await writeFile(source,'source');await inputs.add([source]);await mkdir(join(root,'schemas'));await link(source,join(root,'schemas/pet.yaml'));
   await assert.rejects(saveDirectory(root,output,inputs),/source file/);
   await assert.rejects(readFile(join(root,'api.json')),/ENOENT/);
-  await rm(join(root,'schemas'),{recursive:true});await symlink(root,join(root,'schemas'));
+  await rm(join(root,'schemas'),{recursive:true});await symlink(root,join(root,'schemas'),process.platform==='win32'?'junction':'dir');
   await assert.rejects(saveDirectory(root,output,inputs),/links/);
   await assert.rejects(readFile(join(root,'api.json')),/ENOENT/);
   assert.equal(await readFile(source,'utf8'),'source');
@@ -48,7 +48,7 @@ test('save exact bytes and safely replace existing non-source output',async t=>{
 test('source paths, symlinks, hardlinks and symlinked parents cannot be overwritten',async t=>{
   const root=await fixture(t), original=join(root,'source.zip'), inputs=new ProtectedInputs();
   await writeFile(original,'source'); await inputs.add([original]);
-  await symlink(original,join(root,'sym.zip')); await link(original,join(root,'hard.zip')); await symlink(root,join(root,'alias'));
+  await symlink(original,join(root,'sym.zip')); await link(original,join(root,'hard.zip')); await symlink(root,join(root,'alias'),process.platform==='win32'?'junction':'dir');
   for(const output of [original,join(root,'sym.zip'),join(root,'hard.zip'),join(root,'alias/source.zip')]) await assert.rejects(saveFile(output,bytes,inputs),/source|symlink/);
   assert.equal(await readFile(original,'utf8'),'source'); assert.equal(await readFile(join(root,'hard.zip'),'utf8'),'source');
 });

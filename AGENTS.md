@@ -10,6 +10,8 @@ These files replace reliance on chat history. Preserve accepted requirements unl
 
 An inspection, transformation and export preview now exists: shared in-memory TypeScript processing, a browser editor and an Electron wrapper. Verified commands and current evidence are in README.md and docs/architecture/viewer.md. Explicit media selection and inline schema extraction now generate in-memory previews; see docs/architecture/transformations.md. General external-reference bundling produces one-file previews; see docs/architecture/bundling.md for its limits and tests. Reviewed files export through browser downloads and protected native file/directory saves; see docs/architecture/export.md. Full feasibility, project configuration, CLI and native acceptance remain open. Browser/Electron checks cover exact transformed output in this bounded slice. Create modules only when they have real responsibilities and code.
 
+Native packaging is implemented for Windows x64, macOS arm64/x64 and Linux x64; see docs/architecture/desktop-packaging.md. The required Build check aggregates browser/engine and every native matrix job, then validates the complete download set. Keep this gate fail-closed. README.md documents npm run test:packaging and npm run test:desktop-archive; the latter tests the extracted package with an empty PATH. Native CI coverage does not establish full clean-machine or downloaded-app quarantine acceptance. Workstation builds/tests still run exclusively in WSL.
+
 ## Non-negotiable boundaries
 
 - A single shared engine owns transformation semantics. Never reimplement rules in the UI, CLI or a plugin.
