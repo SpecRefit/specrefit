@@ -1,0 +1,4 @@
+# Marc Hoeve owns all files, including this CODEOWNERS file.
+# GitHub requests owner reviews for pull requests targeting a branch with this file.
+# Required approval is enforced separately by the repository's branch rules.
+* @mrhoeve
