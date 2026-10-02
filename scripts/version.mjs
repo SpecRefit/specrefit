@@ -5,6 +5,11 @@ const numeric = '(?:0|[1-9][0-9]*)';
 const identifier = `(?:${numeric}|[0-9]*[A-Za-z-][0-9A-Za-z-]*)`;
 const releaseTag = new RegExp(`^v(${numeric}\\.${numeric}\\.${numeric}(?:-${identifier}(?:\\.${identifier})*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?)$`);
 
+export function releaseVersion(tag) {
+  if (typeof tag !== 'string' || !releaseTag.test(tag)) throw new Error('Invalid SemVer release tag.');
+  return tag.slice(1);
+}
+
 /** Build tooling only: never imported by the shared contract engine. */
 export function buildVersion({ cwd = process.cwd(), env = process.env } = {}) {
   const git = (...args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();

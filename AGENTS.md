@@ -65,6 +65,8 @@ SonarQube is under consideration and the project should support its analysis and
 
 ## Documentation and handoff
 
+The owner requested GitHub release 0.1.0 on 2026-10-03. See docs/architecture/stable-releases.md for the tag-build and manual draft/publication procedure, and docs/releases/0.1.0.md for its notes. Complete the release only after the owner merges the preparation PR and the actual tag passes every native/browser check. This specific authorization supersedes the earlier lack of stable-release authorization for 0.1.0 only; package registries remain out of scope.
+
 Release versions derive from `v`-prefixed SemVer Git tags; untagged/PR builds carry commit-based development versions. Keep version logic in build tooling, never the shared engine. Do not manually bump the root development placeholder to make a release. See docs/architecture/versioning.md and README.md for `npm run test:version`, dirty/tag behavior, generated metadata and planned publication channels. Creating a versioning workflow does not authorize publishing a release.
 
 The owner subsequently authorized automatic development downloads from successful main builds as one rolling GitHub prerelease under the development tag; Latest is reserved for stable releases. See docs/architecture/development-builds.md for the publication boundary, current artifacts, version rules and `npm run test:development` / `npm run archive:development`. This authorization covers development publication, not stable releases or Maven Central. PRs must never publish. Preserve required review; do not merge implementation PRs to activate publication yourself.

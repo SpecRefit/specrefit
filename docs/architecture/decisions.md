@@ -2,6 +2,12 @@
 
 Baseline recorded 2026-10-02. This register summarizes decisions; the linked requirements and architecture documents define their details. Add dates and rationale when decisions change instead of relying on chat history.
 
+## First versioned release (2026-10-03)
+
+The owner requested 0.1.0 as the first GitHub release. Rebuild all browser/native downloads from the actual annotated version tag and verify them through the same required Build gate; never relabel development archives. Retain the verified set for deliberate draft upload and publication as Latest. Keep main's rolling Development preview separate. This initial 0.x release covers the existing feature slice, not completion of all requirements or production OS acceptance. See [release procedure](stable-releases.md).
+
+The owner selected Maven groupId `dev.specrefit` and confirmed its namespace is verified by Maven Central on 2026-10-03, superseding the intended `io.github.specrefit` group. Artifact IDs, integration implementation and publication credentials/signing remain future work.
+
 ## Accepted
 
 On 2026-10-02 the owner authorized a first read-only viewer slice and accepted Electron as the desktop direction. See [viewer scope and evidence](viewer.md) for the exact agreed scope, implementation workflow and dependency evaluation. This sequences delivery without removing editing, transformation, comparison or export requirements. Library adoption remains evidence-driven.
