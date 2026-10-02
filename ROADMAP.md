@@ -1,6 +1,6 @@
 # Roadmap
 
-This roadmap sequences implementation; it does not remove the requirements in [product.md](docs/requirements/product.md). A first read-only viewer preview now has evidence; it is not completion of the transformation workflow or a product release.
+This roadmap sequences implementation; it does not remove the requirements in [product.md](docs/requirements/product.md). Version 0.1.0 delivers the first inspection, transformation and export slice; it does not complete all product requirements.
 
 ## Current state
 
@@ -9,18 +9,19 @@ This roadmap sequences implementation; it does not remove the requirements in [p
 - [x] Select Apache License 2.0 and add its official text to LICENSE.
 - [ ] Validate the proposed technical stack.
 - [x] Implement the first shared viewer engine/editor with documented WSL build/test commands.
-- [x] Derive coordinated browser/desktop build versions from SemVer Git tags, with commit-based development labels and tag-build validation. See [versioning](docs/architecture/versioning.md). Release publication remains open.
+- [x] Derive coordinated browser/desktop build versions from SemVer Git tags, with commit-based development labels and tag-build validation. See [versioning](docs/architecture/versioning.md). The first versioned release is recorded below.
 - [x] Verify the mandatory GitHub Actions PR build gate (type checks, engine tests and viewer build); [first successful run](https://github.com/SpecRefit/specrefit/actions/runs/37057588856). The active main ruleset requires the GitHub Actions `Build` check on an up-to-date branch and retains code-owner approval.
 - [ ] Complete and verify CI and native OS acceptance.
-- [x] Verify the first automatic main development publication: [successful run](https://github.com/SpecRefit/specrefit/actions/runs/37061962174) and [development preview](https://github.com/SpecRefit/specrefit/releases/tag/development). Native Windows/macOS/CLI/Maven packages remain future work.
+- [x] Verify the first automatic main development publication: [successful run](https://github.com/SpecRefit/specrefit/actions/runs/37061962174) and [development preview](https://github.com/SpecRefit/specrefit/releases/tag/development). Windows/macOS packages are now implemented; CLI/Maven packages remain future work.
 - [x] Deploy and verify the read-only playground at play.specrefit.dev; browser checks now run in CI. See [deployment evidence](docs/architecture/playground.md).
-- [ ] Verify rolling preview replacement after merging its publisher update; the existing downloads were migrated to one prerelease and old development tags removed.
+- [x] Verify rolling preview replacement, including all desktop platforms, in [the successful main run](https://github.com/SpecRefit/specrefit/actions/runs/37075535078). Stable Latest remains separate.
 - [x] Implement explicit media selection and inline schema extraction with shared-engine previews; see [scope and tests](docs/architecture/transformations.md).
 - [x] Implement general external-reference bundling previews in YAML/JSON, with shared-runtime parity and system light/dark appearance; see [scope and tests](docs/architecture/bundling.md). Broader reference semantics remain open.
 - [x] Export exact reviewed files: direct single-file saving, browser ZIP downloads for multiple files and protected native directory export. See [source protection, failure recovery and tests](docs/architecture/export.md); this does not establish native Windows/macOS acceptance.
 - [x] Implement portable Windows x64 and macOS Apple Silicon/Intel packaging alongside Linux, with required native runner checks and complete artifact assembly. [Packaging evidence and limits](docs/architecture/desktop-packaging.md) distinguish CI coverage from manual downloaded-package acceptance and installers.
-- [ ] Deliver a usable product release.
-- [ ] Publish the owner-requested 0.1.0 after merging release preparation and verifying its tagged build. [Release procedure](docs/architecture/stable-releases.md) and [scope/notes](docs/releases/0.1.0.md) are prepared; no release is claimed until publication succeeds.
+- [x] Deliver the first bounded product release, 0.1.0; remaining roadmap requirements stay open.
+- [x] Publish [0.1.0](https://github.com/SpecRefit/specrefit/releases/tag/v0.1.0) after its [successful tag build](https://github.com/SpecRefit/specrefit/actions/runs/37075840504), with five verified archives plus manifest/checksums. See [release evidence](docs/architecture/stable-releases.md) and [scope/notes](docs/releases/0.1.0.md).
+- [ ] Improve smaller-window layout and header wrapping, tracked in [issue #13](https://github.com/SpecRefit/specrefit/issues/13). The owner explicitly kept this separate from 0.1.0 publication.
 
 The separate landing page is already published at [specrefit.dev](https://specrefit.dev). It is not an application release.
 
