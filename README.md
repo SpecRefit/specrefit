@@ -1,4 +1,8 @@
-# SpecRefit
+<p align="center">
+  <a href="https://specrefit.dev/">
+    <img src="docs/assets/specrefit-logo.png" alt="SpecRefit" width="360">
+  </a>
+</p>
 
 SpecRefit is a local-first workspace for inspecting and, in future, adapting OpenAPI contracts through reproducible rules. One shared processing implementation serves the browser and Electron viewer. Transformation, CLI and build integrations remain planned.
 
