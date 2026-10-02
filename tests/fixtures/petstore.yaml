@@ -1,0 +1,90 @@
+openapi: 3.2.0
+info:
+  title: Pet shelter API
+  version: 1.4.0
+  description: A small contract for exploring pets, care teams and adoption requests.
+servers:
+  - url: https://api.example.invalid/v1
+tags:
+  - name: Pets
+    description: Find a pet and explore its details.
+  - name: Adoptions
+security:
+  - ApiKey: []
+paths:
+  /pets:
+    get:
+      tags: [Pets]
+      summary: Find your next companion
+      description: Returns the pets currently available for adoption. Use the optional status filter to narrow the results.
+      parameters:
+        - name: status
+          in: query
+          description: Filter by adoption status.
+          schema:
+            type: string
+            enum: [available, pending, adopted]
+      responses:
+        '200':
+          description: A list of matching pets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: ./schemas/pet.yaml
+        '401':
+          description: A valid API key is required.
+    query:
+      tags: [Pets]
+      summary: Search pets with a structured query
+      requestBody:
+        content:
+          application/json:
+            schema: {type: object, properties: {name: {type: string}}}
+      responses:
+        '200': {description: Search results}
+  /pets/{petId}:
+    parameters:
+      - name: petId
+        in: path
+        required: true
+        schema: {type: integer}
+    get:
+      tags: [Pets]
+      summary: Get a pet
+      responses:
+        '200':
+          description: The requested pet.
+          content:
+            application/json:
+              schema: {$ref: ./schemas/pet.yaml}
+        '404': {description: This pet was not found.}
+  /adoptions:
+    post:
+      tags: [Adoptions]
+      summary: Request an adoption
+      description: Submit an adoption request. The shelter will contact you with the next steps.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Adoption'}
+      responses:
+        '201': {description: Your request has been received.}
+components:
+  schemas:
+    Pet: {$ref: ./schemas/pet.yaml}
+    Adoption:
+      type: object
+      required: [petId, email]
+      properties:
+        petId: {type: integer, description: The pet you would like to adopt.}
+        email: {type: string, format: email}
+        note: {type: [string, 'null'], description: An optional message for the shelter.}
+  securitySchemes:
+    ApiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+x-shelter: All example data stays on your device.
