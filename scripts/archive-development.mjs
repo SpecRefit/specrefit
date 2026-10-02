@@ -22,5 +22,5 @@ if (target.platform === 'linux') {
 } else {
   execFileSync(join(process.env.SystemRoot, 'System32/tar.exe'), ['-a', '-cf', archivePath, '-C', resolve('artifacts'), target.folder], { stdio: 'inherit' });
 }
-const manifest = await writeInventory(output, build);
-console.log(`Archived ${manifest.files.length} development artifacts for ${build.version}.`);
+const manifest = await writeInventory(output, build, build.tag);
+console.log(`Archived ${manifest.files.length} artifacts for ${build.version}.`);

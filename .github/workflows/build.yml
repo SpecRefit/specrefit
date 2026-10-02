@@ -58,7 +58,6 @@ jobs:
 
   native:
     name: Desktop (${{ matrix.target }})
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     strategy:
       fail-fast: false
       matrix:
@@ -70,7 +69,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     env:
-      SPECREFIT_BUILD_CHANNEL: development
+      SPECREFIT_BUILD_CHANNEL: ${{ github.ref_type != 'tag' && 'development' || '' }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -115,10 +114,9 @@ jobs:
         env:
           VERIFIED: ${{ needs.verify.result }}
           NATIVE: ${{ needs.native.result }}
-          NATIVE_REQUIRED: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' }}
         run: |
           test "$VERIFIED" = success
-          if [ "$NATIVE_REQUIRED" = true ]; then test "$NATIVE" = success; fi
+          test "$NATIVE" = success
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         if: needs.native.result == 'success'
         with:
@@ -136,6 +134,15 @@ jobs:
       - name: Verify complete matching download set
         if: needs.native.result == 'success'
         run: node scripts/assemble-development.mjs
+      - name: Retain verified release downloads
+        if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-downloads
+          path: artifacts/development/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
 
   deploy-playground:
     name: Deploy playground

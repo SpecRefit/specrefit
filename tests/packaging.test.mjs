@@ -7,7 +7,7 @@ import { assembleDevelopment, requireCompleteDownloads } from '../scripts/assemb
 import { writeInventory, verifyInventory } from '../scripts/development-artifacts.mjs';
 
 const build={version:'0.0.0-dev+g'+'a'.repeat(12),commit:'a'.repeat(40),dirty:false,tag:null};
-async function fixture(t) {
+async function fixture(t, metadata = build, tag = null) {
   await mkdir('.cache',{recursive:true});const root=await mkdtemp(resolve('.cache/package-test-'));
   t.after(()=>rm(root,{recursive:true,force:true}));
   const input=join(root,'input'),output=join(root,'output');await mkdir(input);
@@ -15,7 +15,7 @@ async function fixture(t) {
     const [platform,arch]=id.split('-'),target=desktopTarget(platform,arch),dir=join(input,'development-'+id);
     await mkdir(dir);await writeFile(join(dir,target.archive),'native fixture '+id);
     if(platform==='linux')await writeFile(join(dir,'specrefit-web.tar.gz'),'web fixture');
-    await writeInventory(dir,build);
+    await writeInventory(dir,metadata,tag);
   }
   return {input,output};
 }
@@ -27,6 +27,23 @@ test('native package names and version fields are explicit and bounded',()=>{
   assert.equal(nativeVersion('1.2.3-beta+abc'),'1.2.3');
   assert.equal(nativeVersion(build.version),'0.0.0');
   assert.throws(()=>nativeVersion('70000.0.0'));
+});
+test('release assembly requires the selected tag on every artifact and cannot enter the development channel',async t=>{
+  const tag='v0.1.0',release={...build,version:'0.1.0',tag};
+  const {input,output}=await fixture(t,release,tag);
+  const result=await assembleDevelopment(input,output,build.commit,tag);
+  assert.equal(result.version,'0.1.0');assert.equal(result.tag,tag);
+  assert.deepEqual(await verifyInventory(output,build.commit,tag),result);
+  await assert.rejects(verifyInventory(output,build.commit),/Development artifacts/);
+  await assert.rejects(assembleDevelopment(input,output,build.commit,'v0.2.0'),/selected tag/);
+  await assert.rejects(assembleDevelopment(input,output,'b'.repeat(40),tag),/workflow commit/);
+  const dir=join(input,'development-win32-x64');
+  await writeInventory(dir,build);
+  await assert.rejects(assembleDevelopment(input,output,build.commit,tag),/selected tag/);
+  assert.deepEqual(await verifyInventory(output,build.commit,tag),result,'A mixed set must preserve previous output');
+  for(const metadata of [{...release,dirty:true},{...release,version:'0.2.0'},{...release,tag:'v0.2.0'}])
+    await assert.rejects(writeInventory(dir,metadata,tag),/selected tag/);
+  await assert.rejects(writeInventory(dir,release,'v01.0.0'),/Invalid SemVer/);
 });
 test('assembly verifies all native groups and publishes one exact complete inventory',async t=>{
   const {input,output}=await fixture(t);const result=await assembleDevelopment(input,output,build.commit);

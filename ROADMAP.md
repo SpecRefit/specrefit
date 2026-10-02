@@ -20,6 +20,7 @@ This roadmap sequences implementation; it does not remove the requirements in [p
 - [x] Export exact reviewed files: direct single-file saving, browser ZIP downloads for multiple files and protected native directory export. See [source protection, failure recovery and tests](docs/architecture/export.md); this does not establish native Windows/macOS acceptance.
 - [x] Implement portable Windows x64 and macOS Apple Silicon/Intel packaging alongside Linux, with required native runner checks and complete artifact assembly. [Packaging evidence and limits](docs/architecture/desktop-packaging.md) distinguish CI coverage from manual downloaded-package acceptance and installers.
 - [ ] Deliver a usable product release.
+- [ ] Publish the owner-requested 0.1.0 after merging release preparation and verifying its tagged build. [Release procedure](docs/architecture/stable-releases.md) and [scope/notes](docs/releases/0.1.0.md) are prepared; no release is claimed until publication succeeds.
 
 The separate landing page is already published at [specrefit.dev](https://specrefit.dev). It is not an application release.
 

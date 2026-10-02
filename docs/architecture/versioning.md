@@ -1,6 +1,6 @@
 # Build versions and release channels
 
-Accepted direction, 2026-10-02: a Git tag is the source of the release version. Browser, desktop and the future CLI use the same product version. GitHub Releases carries development downloads from main; Maven Central remains the planned channel for the future Maven integration. Stable publication, signing and registry credentials remain future work. See [development builds](development-builds.md) for the owner's subsequently authorized automatic publication.
+Accepted direction, 2026-10-02: a Git tag is the source of the release version. Browser, desktop and the future CLI use the same product version. GitHub Releases carries development downloads from main; Maven Central remains the planned channel for the future Maven integration. The first stable release is now authorized; signing and registry credentials remain future work. See [development builds](development-builds.md) for the owner's subsequently authorized automatic publication.
 
 ## Implemented version derivation
 
@@ -16,9 +16,9 @@ The root `package.json` and lockfile retain `0.0.0-dev` as a development placeho
 
 The Build workflow runs for PRs to `main`, pushes to `main` and pushed `v*` tags. It fetches full history/tags and performs the documented checks. Invalid release tags fail the build. Main builds explicitly select the development channel, ignoring stable tags for version derivation, and a separate main-only job publishes verified development downloads. The build job remains read-only. SemVer tag builds and PRs do not publish releases; Maven publication is not implemented.
 
-Native package resource fields use the numeric major/minor/patch core; development packages therefore use 0.0.0 in those OS fields. The application package, app.getVersion(), UI and download manifest retain the complete Git-derived version. Native PR/main builds must all pass the required Build gate; tag runs currently perform browser/engine checks only. See [native packaging](desktop-packaging.md).
+Native package resource fields use the numeric major/minor/patch core; development packages therefore use 0.0.0 in those OS fields. The application package, app.getVersion(), UI and download manifest retain the complete Git-derived version. Native PR/main builds must all pass the required Build gate; tag runs now also require all native checks and verified archive assembly. See [native packaging](desktop-packaging.md).
 
-When distributable packages are ready, the intended release process is: merge a reviewed PR, choose the SemVer release number, create an annotated tag on the intended clean `main` commit, then run the tag's checks and build the matching packages. A future publication workflow can attach verified desktop/CLI artifacts to GitHub Releases. Maven Central publication will need its own namespace, authentication/signing and version-mapping design when the Maven integration exists. Do not infer that a successful tag build proves native platform acceptance or authorizes automatic publication today.
+When distributable packages are ready, the intended release process is: merge a reviewed PR, choose the SemVer release number, create an annotated tag on the intended clean `main` commit, then run the tag's checks and build the matching packages. The owner requested 0.1.0 on 2026-10-03; its [release procedure](stable-releases.md) uses verified tag downloads uploaded to a draft before manual publication as Latest. Maven groupId is dev.specrefit; the owner confirmed Maven Central namespace verification on 2026-10-03. Publication still needs artifact IDs, authentication/signing and version-mapping design when the Maven integration exists. Do not infer that a successful tag build proves native platform acceptance or authorizes automatic publication today.
 
 ## Verification
 
