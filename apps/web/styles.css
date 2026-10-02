@@ -616,3 +616,5 @@ button,select,input,summary {
   }
 
 }
+
+.refit-controls,fieldset{margin-block:12px;padding:14px;border:1px solid var(--line);border-radius:8px}fieldset label{display:flex;align-items:center;gap:8px;margin-block:8px}fieldset input[type=checkbox]{width:auto}.refit-controls input,textarea{display:block;width:100%;max-width:100%;box-sizing:border-box}textarea{font:12px/1.5 ui-monospace,monospace;padding:12px}.definition-card>button{margin:4px}.preview-result pre{max-height:500px;overflow:auto}

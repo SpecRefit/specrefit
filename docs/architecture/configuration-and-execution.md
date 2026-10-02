@@ -24,7 +24,7 @@ A reproducible edit needs a structural target, an expected precondition and an i
 
 Rules execute in stored order. Trace each change to its rule and document location. Do not flag every sequential edit as a conflict; distinguish intentional composition from incompatible requirements. Exact conflict classification remains to be designed and tested.
 
-The first transformation to implement is a media-type preference, with explicit targeting and exceptions. On 2026-10-02 the owner clarified that the user must select one or several offered media types, rather than automatically retaining every JSON variant. For example, choose only `application/json`, or choose it together with `application/problem+json`. Present offered types as selectable choices. The proposed behavior is to retain the selected types present in a targeted request/response and remove other media entries only when at least one selection is present; otherwise leave it unchanged. Exact matching, parameters, shared referenced content and request/response targeting still need fixtures and implementation design. This is agreed selection behavior with a proposed no-match policy, not implemented transformation support. Do not silently invent content or claim that a server supports an authentication or media type it does not advertise.
+The first two transformations now preview explicit media-type selection and inline schema extraction. The owner requires selecting one or several advertised media keys, deterministic suggested model names with saved overrides, and idempotent replay. Exact matching and conservative handling of shared references are implemented within the [documented preview boundaries](transformations.md). Complete project configuration, broad-rule exceptions, bundling and export remain open. Do not silently invent content or claim that a server supports an authentication or media type it does not advertise.
 
 ## Deterministic output and safe persistence
 
@@ -43,3 +43,7 @@ Diagnostic records need a stable code, severity, document location, explanation,
 An update comparison runs contract X and contract Y, each with its own complete reference set, through the same engine version and configuration. Show source differences, transformed differences and rule applicability changes. Semantic reports explain changes and their causes; text diffs show precise output. If either side blocks, mark its output unavailable or incomplete explicitly.
 
 Comparing different engine/configuration versions and storing a general historical run database are not part of the agreed initial comparison scope. Do not build those incidentally.
+
+## Implemented preview rule model
+
+The initial version 1 rule list and exact matching/extraction behavior are documented in [transformations.md](transformations.md). This bounded in-memory preview model is implemented separately from the still-open complete project configuration and CLI syntax. It includes ordered explicit targets, expected values/types, saved extraction names and missing-target policy. Contract-wide external-reference bundling is an agreed output option, not a rule and not yet implemented.

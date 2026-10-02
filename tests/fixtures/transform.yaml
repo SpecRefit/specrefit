@@ -1,0 +1,36 @@
+# Retain document comment
+openapi: 3.1.2
+info: {title: Transformation fixture, version: '1'}
+paths:
+  /pets:
+    post:
+      operationId: createPet
+      requestBody:
+        content:
+          application/json:
+            # Media context stays at the original location
+            schema:
+              # Model comment travels with the schema
+              type: object
+              description: A pet to create
+              required: [name]
+              properties:
+                name: {type: string} # Keep property comment
+                address:
+                  type: object
+                  properties:
+                    city: {type: string}
+              x-owner: shelter
+          application/problem+json:
+            schema: {type: object, properties: {error: {type: string}}}
+          application/xml:
+            # Removed with XML, with a loss diagnostic
+            schema: {type: object}
+          x-note: preserve unknown content extension
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: {type: object, properties: {id: {type: integer}}}
+x-context: Keep unknown root information

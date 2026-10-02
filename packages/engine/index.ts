@@ -20,6 +20,7 @@ export interface Inspection {
   operations: Operation[]; schemas: { name: string; item: Item }[];
   references: Reference[]; diagnostics: Diagnostic[];
   locations: Location[];
+  schemaLocations: Location[];
 }
 export const limits = { files: 64, fileBytes: 20_000_000, totalBytes: 40_000_000, nodes: 1_000_000, depth: 80 };
 export const object = (v: unknown): v is ObjectValue => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -51,7 +52,7 @@ interface Parsed { source: Source; value?: Value; ast?: ReturnType<typeof parseD
 
 /** Pure in-memory inspection. No filesystem, network, browser or Electron APIs. */
 export function inspect(input: unknown): Inspection {
-  const result: Inspection = { entry: '', version: '', title: 'Contract', description: '', documents: [], operations: [], schemas: [], references: [], diagnostics: [], locations: [] };
+  const result: Inspection = { entry: '', version: '', title: 'Contract', description: '', documents: [], operations: [], schemas: [], references: [], diagnostics: [], locations: [], schemaLocations: [] };
   const docs = new Map<string, Parsed>();
   function location(document: string, pointer = ''): Location {
     const d = docs.get(document);
@@ -192,6 +193,7 @@ export function inspect(input: unknown): Inspection {
     if (visited.has(visitKey)) return; visited.add(visitKey);
     if (depth > limits.depth || visited.size > limits.nodes) { diagnostic('LIMIT', 'Reference traversal reached its safety limit. Inspection is partial.', loc.document, loc.pointer); return; }
     result.locations.push(loc);
+    if (role === 'schema') result.schemaLocations.push(loc);
     const v = get(loc);
     if (role === 'schema' && typeof v === 'boolean') {
       if (family === '0' && !loc.pointer.endsWith('/additionalProperties')) diagnostic('SCHEMA_VERSION', 'Boolean schemas are not part of OpenAPI 3.0.', loc.document, loc.pointer);
@@ -204,7 +206,7 @@ export function inspect(input: unknown): Inspection {
       if (!own(v, name)) return;
       if (!object(v[name])) { diagnostic('OBJECT', `${name} must be an object.`, loc.document, child(loc.pointer, name)); return; }
       for (const k of Object.keys(v[name])) {
-        if (['paths', 'responses'].includes(name) && k.startsWith('x-')) continue;
+        if (['paths', 'responses', 'content'].includes(name) && k.startsWith('x-')) continue;
         scan(location(loc.document, child(child(loc.pointer, name), k)), next, depth + 1, uncertainBase);
       }
     };

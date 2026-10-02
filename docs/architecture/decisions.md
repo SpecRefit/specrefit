@@ -59,3 +59,7 @@ A separately reusable parser intended to be shared with Fabrikt is no longer a p
 ## Hosted preview and website (2026-10-02)
 
 The owner requested the playground and development download availability on the website. Publish the tested browser viewer from successful main builds to GitHub Pages at play.specrefit.dev, keeping all contract processing local. Browser checks join the required Build gate. See [publication boundaries](playground.md); stable download channels must be separated before stable releases are introduced.
+
+## First transformations (2026-10-02)
+
+The owner authorized media selection and inline schema extraction in one PR. Use exact user-selected media keys, deterministic suggested names with saved overrides, ordered rules and explicit preconditions. The shared engine generates actual preview bytes; UI wrappers do not implement transformation semantics. The existing yaml syntax tree is used for retained-format preview serialization and comment movement, without new dependencies. [Scope and evidence](transformations.md) distinguish this slice from full configuration, export, bundling, duplicate-model merging and CLI support.

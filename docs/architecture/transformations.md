@@ -1,0 +1,35 @@
+# First transformation preview
+
+The owner authorized one PR combining explicit media-type selection and extraction of inline schemas on 2026-10-02. This implements a bounded preview in the shared engine and browser/Electron editor. It does not complete the full configuration, export, bundling or CLI workflow.
+
+## User workflow
+
+In an operation's inline request or response, check one or several offered media types and add a selection rule. Open an inline schema with **Explore schema**, accept or edit the proposed model name, and add an extraction rule. Nested schemas and inline parameter schemas are reachable from their detail trees. The **Rules and preview** tab allows reordering/removing rules and selecting error or warning for a missing target. Removing a rule excludes its target from this explicit rule list.
+
+**Preview these rules** runs the same engine through a worker. The result includes per-rule explanations, changed lines and the exact resulting text for every document. Inputs remain unchanged. Rule edits, new files and entry changes invalidate the result; obsolete worker replies are ignored. The version 1 rules JSON can be copied externally and pasted back for replay. This is an experimental rule configuration, not the complete project configuration: entry and reference mappings are supplied separately by the current inspection session. YAML configuration loading, configuration file saving, contract downloads, filesystem persistence, broad-rule exceptions and CLI execution remain future work.
+
+## Engine behavior
+
+`packages/engine/transform.ts` exports the pure `transform(input, configuration)` function. It accepts the existing logical document input, validates the configuration at runtime, and returns ordered changes, diagnostics and complete output files. Blocking errors return no output files. There is no network or filesystem access. It uses existing dependencies only: the adopted yaml syntax tree retains comments; JSON documents use the existing strict inspection parser and deterministic JSON serialization.
+
+- `select-media` targets a request/response content map with an expected set of offered types and an explicit nonempty `keep` list. Matching uses exact advertised keys, including parameters: no wildcard or suffix inference. Keep all selected offered types; when none match, keep the map unchanged. A completed selection is reported as already applied. Unexpected media types or an incompatible partial change require review. Unknown content extensions are retained, including `x-...` entries; YAML comments attached to removed entries are removed with an explicit loss warning. Retained media definitions are not reconstructed from a restricted model.
+- `extract-schema` targets an inline schema object inside one operation, with its complete expected value and chosen component name. The engine moves it to `components.schemas` in the same OpenAPI document and inserts a local `$ref`. Relative external dependencies keep the same document base. Schema node and key comments move with it; nested property comments and unknown fields are retained. Surrounding parent comments stay at the original use with an association warning, rather than guessing that they describe the model. The proposed name uses operationId, or method/path, plus request/response context and nested property names. The stored name never changes automatically on replay. Name collisions block; even identical models at a colliding name are not silently merged. A matching existing reference and component are reported as already applied.
+- Rules execute in stored order. Preconditions apply to the state at that point; incompatible rules block rather than guessing new targets. Running the same input/configuration produces the same bytes, and replaying the tested rules on their result leaves bytes unchanged. Untouched documents retain their original text; changed YAML is serialized with fixed line width and changed JSON uses two-space indentation plus a final LF. Exact original formatting is not promised.
+
+## Deliberate boundaries
+
+All inspection diagnostics currently block transformation, including unsupported scope/dialect warnings. This is conservative preview behavior pending finer validation; partial inspection remains available. Shared or inherited request/response/parameter definitions and operations reused by multiple paths cannot be implicitly changed. Extraction requires an OpenAPI root in the operation's document. Existing schema references are not flattened. Boolean schemas are not extraction candidates in this slice.
+
+Extraction with discriminator mappings, references pointing into the selected inline schema, and unsupported schema scope is blocked rather than relocating those references incorrectly. Recursive external dependencies can remain unchanged; extraction of a self-referenced inline schema still needs reference relocation work. Automatic duplicate-model merging is not implemented. These restrictions are surfaced in the preview, not silently treated as success.
+
+The input inspection limits still apply. Rule configuration is limited to 128 rules, 100,000 visited values, depth 80 and 4 million string characters; the editor also limits pasted JSON to 4 MB of characters. The worker has a ten-second timeout. These bounds do not establish exhaustive denial-of-service resistance. No source/config file write API exists in this slice; safe filesystem export remains a separate requirement.
+
+## General bundling option
+
+The owner also requested a contract-wide output option: **Bundle external references into one file**. This belongs to output settings, independent of media selection and schema extraction. It remains planned. Missing required documents block bundling; relative paths, duplicate names and recursive relationships must retain meaning. Recursive models may use internal references. Do not show a working bundling control before the bundler exists.
+
+## Verification
+
+`npm test` runs existing inspection tests and transformation regressions for OpenAPI 3.0.4/3.1.2/3.2.0 in JSON/YAML, idempotence, preconditions, names, missing targets, comments/extensions, external recursive references, invalid configuration and shared-reference restrictions. `npm run test:browser` checks the combined UI workflow and exact output equality against Node across Chromium, Firefox and WebKit. `npm run test:desktop` verifies the sandbox and compares both transformation results through Electron's actual worker with Node. This is real transformed-output parity, but not yet packaged CLI or native multi-OS acceptance.
+
+Local verification on 2026-10-02: type check/build, all 30 inspection cases and 17 transformation cases, 10 version cases, 12 publication cases, 27 browser cases and both Electron cases passed in WSL. The transformation UI screenshot and generated YAML fixture were inspected, including comment placement rather than merely comment presence. The final nearest-operation callback fix passed its focused engine regression; the PR Build gate reruns the complete suite.

@@ -4,9 +4,9 @@
   </a>
 </p>
 
-SpecRefit is a local-first workspace for inspecting and, in future, adapting OpenAPI contracts through reproducible rules. One shared processing implementation serves the browser and Electron viewer. Transformation, CLI and build integrations remain planned.
+SpecRefit is a local-first workspace for inspecting OpenAPI contracts and previewing reproducible transformations. One shared processing implementation serves the browser and Electron editor. Export, CLI and build integrations remain planned.
 
-**Status: read-only viewer preview, not a product release.** Open YAML/JSON contracts, browse operations by tag, search/filter, inspect parameters, request bodies, responses and security, follow schemas and recursive references, and supply missing reference files. Representative OpenAPI 3.0.4, 3.1.2 and 3.2.0 fixtures are tested; this is not a complete OpenAPI/JSON Schema validator. Read the [support boundaries and evidence](docs/architecture/viewer.md) before relying on partial inspection. Editing, transformations, comparison, export, a product CLI and native installers are not implemented.
+**Status: inspection and transformation preview, not a product release.** Open YAML/JSON contracts, browse operations by tag, search/filter, inspect parameters, request bodies, responses and security, follow schemas and recursive references, and supply missing reference files. Representative OpenAPI 3.0.4, 3.1.2 and 3.2.0 fixtures are tested; this is not a complete OpenAPI/JSON Schema validator. Read the [support boundaries and evidence](docs/architecture/viewer.md) before relying on partial inspection. Select media types and extract inline schemas into named shared models, with ordered rules and exact output previews. See [transformation behavior and limits](docs/architecture/transformations.md). Comparison, export, a product CLI and native installers are not implemented.
 
 ## Start here
 
@@ -76,10 +76,10 @@ Build and test commands:
 
 ```bash
 npm run check          # TypeScript checks
-npm test               # 30 engine/semantic/security cases
+npm test               # Inspection and transformation regression cases
 npm run test:version   # Git-tag and development-version cases
 npm run test:development # Development artifact/publication checks
-npm run test:browser   # 21 cases in Chromium, Firefox and WebKit; includes Node parity
+npm run test:browser   # Browser workflows and exact Node output parity in three browser engines
 npm run test:desktop   # Electron parity and sandbox checks; package test skipped unless enabled
 npm run package:desktop
 SPECREFIT_TEST_PACKAGE=1 npm run test:desktop
@@ -94,7 +94,15 @@ Successful main builds automatically publish complete development downloads unde
 
 `package:desktop` creates a Linux x64 development bundle at `artifacts/specrefit-linux-x64/`, including Electron, application files, Apache-2.0 and third-party notices. Launch its `electron` executable; the package test starts it without Node on PATH. This is an experimental Linux package, **not** native Windows/macOS support or clean-machine acceptance. Windows/macOS packages, installers, signing, auto-update design and stable release distribution remain open.
 
-No generated contract output exists yet. Cross-runtime checks compare complete inspection results and retained source text, not transformed contract bytes. Configuration/rule tests, CLI/source-output protection integration, editing/export E2E, archive/fetch security, native acceptance, coverage import and SonarQube remain future work. See [ROADMAP.md](ROADMAP.md).
+Transformation previews now generate in-memory contract output. Cross-runtime checks compare exact output file names and bytes as well as inspection results. Full project configuration, CLI/source-output protection, export, archive/fetch security, native acceptance, coverage import and SonarQube remain future work. See [ROADMAP.md](ROADMAP.md).
+
+### Preview transformations
+
+Choose media types in an operation's request or response and add a selection rule. Open an inline schema to extract a shared model with a suggested, editable name. In **Rules and preview**, reorder or remove rules and run **Preview these rules** to review the changes and exact resulting files. Copy the rules JSON to save it externally; paste it back to replay against the same logical input locations. Originals are never written. Contract export and bundling remain planned.
+
+## Built in collaboration with ChatGPT Codex
+
+SpecRefit is being developed in collaboration with OpenAI's ChatGPT Codex, contributing to design, implementation, tests and documentation. Human direction, product decisions and code review guide the work. This project explores how that collaboration can turn ideas into working software quickly.
 
 ## License
 
