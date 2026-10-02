@@ -1,6 +1,7 @@
 import { canonical, child, displayId, limits, object, string, valueAt, type Inspection, type Item, type Location, type Operation, type Source, type Value } from '../engine/index.ts';
 import { suggestSchemaName, type Rule, type Preview } from '../engine/transform.ts';
 import type { Output } from '../engine/bundle.ts';
+import { saveReviewedOutput } from './export.ts';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', cls = ''): HTMLElementTagNameMap[K] => {
   const node = document.createElement(tag); node.textContent = text; if (cls) node.className = cls; return node;
@@ -60,6 +61,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
     try {
       const added = await Promise.all(list.map(async f => ({ id: target ?? canonical((f.webkitRelativePath || f.name).split('/').map(encodeURIComponent).join('/')), text: await f.text() })));
       if (new Set([...sources, ...added].map(s => canonical(s.id))).size !== sources.length + added.length) { fail('A file with this location is already open. Use a folder to retain distinct paths, or start a new project. No files were replaced.'); return; }
+      await window.specRefitDesktop?.protectInputs(list);
       sources.push(...added);
       if (!entry) entry = added.find(s => /(?:^|\/)(?:openapi|swagger|api)\.(?:ya?ml|json)$/i.test(s.id))?.id ?? added[0].id;
       process();
@@ -270,7 +272,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
     showRefit();
   }
   function showRefit() {
-    pane.replaceChildren(el('p', 'REPRODUCIBLE CHANGES', 'eyebrow'), el('h1', 'Rules and preview'), el('p', 'Rules run in the listed order on the original files. Bundling runs afterwards and also works without rules. Preview only: file export is not available yet.', 'description'));
+    pane.replaceChildren(el('p', 'REPRODUCIBLE CHANGES', 'eyebrow'), el('h1', 'Rules and preview'), el('p', 'Rules run in the listed order on the original files. Bundling runs afterwards and also works without rules. Review the output, then export its exact files.', 'description'));
     const settings = el('fieldset', '', 'refit-controls'); settings.append(el('legend', 'Output'));
     const bundled = el('input'); bundled.type = 'checkbox'; bundled.checked = outputSettings.bundle;
     const format = el('select'); format.disabled = !outputSettings.bundle;
@@ -313,6 +315,8 @@ export function mount(host: HTMLElement, sample: Source[]) {
     if (!preview) return;
     const output = el('section', '', 'preview-result'); output.append(el('h2', preview.files.length ? 'Transformation preview' : 'Preview blocked'));
     for (const message of preview.diagnostics) output.append(el('p', message, 'warning'));
+    for (const message of preview.exportDiagnostics ?? []) output.append(el('p', `Export unavailable: ${message}`, 'warning'));
+    if (preview.exportPlan) output.append(el('p', `Entry document: ${preview.exportPlan.entry}. ${preview.exportPlan.files.length > 1 ? (window.specRefitDesktop ? 'Choose a separate output folder.' : 'Download the files together as a ZIP.') : 'Save the reviewed file directly.'}`, 'muted'), button('Export reviewed output', () => exportPreview()));
     for (const change of preview.changes) output.append(el('p', `${change.rule} · ${change.status}: ${change.message}`, change.status === 'error' || change.status === 'warning' ? 'warning' : 'notice'));
     for (const file of preview.files) {
       const original = sources.find(s => canonical(s.id) === (preview?.configuration?.output?.bundle ? report!.entry : file.id))?.text ?? '';
@@ -328,6 +332,25 @@ export function mount(host: HTMLElement, sample: Source[]) {
       details.append(el('h3', 'Exact resulting file'), el('pre', file.text)); output.append(details);
     }
     pane.append(output);
+  }
+
+  function exportPreview() {
+    const plan = preview?.exportPlan;
+    if (!plan) return;
+    clearFeedback(); worker?.terminate(); const run = ++generation;
+    host.inert = true; announce('Preparing the reviewed output locally…');
+    const current = worker = new Worker(new URL('./worker.js', document.baseURI), { type: 'module' });
+    const timer = window.setTimeout(() => { current.terminate(); if (run === generation) { host.inert = false; fail('Export exceeded 10 seconds. No download was started.'); } }, 10_000);
+    current.onmessage = async event => {
+      clearTimeout(timer); current.terminate(); if (run !== generation) return;
+      try {
+        if (event.data.error || !(event.data.download?.bytes instanceof Uint8Array) || !event.data.output) throw new Error(event.data.error || 'Export did not produce valid output.');
+        announce(await saveReviewedOutput(event.data.output, event.data.download));
+      } catch (error) { fail(error instanceof Error ? error.message : 'Export failed. Try again.'); }
+      finally { host.inert = false; }
+    };
+    current.onerror = () => { clearTimeout(timer); current.terminate(); if (run === generation) { host.inert = false; fail('Export could not start. The preview and original files are unchanged.'); } };
+    current.postMessage({ action: 'export', plan });
   }
 
   function diagnostics() {

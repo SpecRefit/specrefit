@@ -56,6 +56,7 @@ SpecRefit is independent of Fabrikt and other generators. It produces ordinary a
 - Preview uses the actual engine result that will be written, not a parallel simulation. Provide a semantic report explaining what changed and which rule caused it, plus Git-style per-file text diffs with context and unified/side-by-side views. No Git repository is required.
 - A CLI dry-run performs the same transformation and checks without writing generated output. Exact report-output options will be designed with the CLI.
 - Output must never overwrite any input document, referenced input or active configuration. Existing non-input output files can be replaced. Guard actual file identity and aliases, not only spelling of paths. Avoid partially replacing an output set on validation failure.
+- Save a single output document directly. For multiple documents, the browser offers a ZIP preserving their folder structure; the standalone desktop app writes the files directly into the selected output folder (clarified by the owner on 2026-10-03). Report incomplete multi-file saves explicitly.
 - Offer both retained document structure and bundling into a single specification. Bundling may retain internal references; it must not infinitely expand recursive schemas.
 - Users can choose YAML or JSON output independently of input format. Default multi-file output preserves each source document's format. Rewrite reference paths when output filenames change.
 

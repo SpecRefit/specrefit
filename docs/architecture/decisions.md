@@ -56,6 +56,12 @@ On 2026-10-02 the owner superseded the per-commit/Latest development policy: kee
 
 A separately reusable parser intended to be shared with Fabrikt is no longer a project objective. Requiring a single pre-bundled input to accelerate development was explicitly rejected. External network retrieval was initially outside scope, then accepted as optional explicit input acquisition; it remains outside the engine and cannot require a web processing/proxy server.
 
+## Reviewed export and next desktop distribution (2026-10-03)
+
+Export the exact existing preview through platform adapters. Single files save directly; multiple files use a ZIP download in browsers and a chosen output directory in Electron. Use pinned MIT-licensed fflate for deterministic browser archives, with the [dependency review and persistence limits](export.md). Native saving preflights every destination, protects original/current source identities and replaces each file through staging. Multi-file failures report the completed count and remain explicitly incomplete; there is no cross-file rollback guarantee.
+
+The owner agreed to Windows and macOS packaging together after export. Development macOS builds will be unsigned and unnotarized because no Apple Developer account is available. Signing/notarization and production OS support remain future decisions; do not claim native acceptance from WSL evidence.
+
 ## Hosted preview and website (2026-10-02)
 
 The owner requested the playground and development download availability on the website. Publish the tested browser viewer from successful main builds to GitHub Pages at play.specrefit.dev, keeping all contract processing local. Browser checks join the required Build gate. See [publication boundaries](playground.md); stable download channels must be separated before stable releases are introduced.

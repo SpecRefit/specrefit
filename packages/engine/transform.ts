@@ -1,6 +1,7 @@
 import { isMap, isScalar, parseDocument } from 'yaml';
 import { canonical, child, inspect, object, valueAt, type Operation, type Source, type Value } from './index.ts';
 import { bundle, type Output } from './bundle.ts';
+import { prepareExport, type ExportPlan } from './export.ts';
 
 export interface Target { document: string; pointer: string }
 interface BaseRule { id: string; target: Target; onMissing: 'error' | 'warning' }
@@ -9,7 +10,7 @@ export interface ExtractRule extends BaseRule { kind: 'extract-schema'; name: st
 export type Rule = MediaRule | ExtractRule;
 export interface Configuration { version: 1; rules: Rule[]; output?: Output }
 export interface Change { rule: string; status: 'changed' | 'already-applied' | 'unchanged' | 'warning' | 'error'; message: string; target: Target }
-export interface Preview { files: Source[]; changes: Change[]; diagnostics: string[]; configuration?: Configuration }
+export interface Preview { files: Source[]; changes: Change[]; diagnostics: string[]; configuration?: Configuration; exportPlan?: ExportPlan; exportDiagnostics?: string[] }
 const tokens = (pointer: string) => pointer.slice(1).split('/').map(s => s.replace(/~1/g, '/').replace(/~0/g, '~'));
 const under = (p: string, parent: string) => p === parent || p.startsWith(parent + '/');
 const same = (a: unknown, b: unknown): boolean => {
@@ -150,6 +151,10 @@ export function transform(input: unknown, config: unknown): Preview {
     const target = { document: report.entry, pointer: '' };
     for (const message of bundled.warnings) result.changes.push({ rule: 'output', status: 'warning', message, target });
     if (bundled.files.length) result.changes.push({ rule: 'output', status: 'changed', message: 'Bundle external references into one file; recursive relationships remain internal references.', target });
+  }
+  if (result.files.length) {
+    const exported = prepareExport(config.output?.bundle ? result.files[0].id : report.entry, result.files);
+    result.exportPlan = exported.plan; result.exportDiagnostics = exported.diagnostics;
   }
   return result;
 }

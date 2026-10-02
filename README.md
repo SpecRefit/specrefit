@@ -4,9 +4,9 @@
   </a>
 </p>
 
-SpecRefit is a local-first workspace for inspecting OpenAPI contracts and previewing reproducible transformations. One shared processing implementation serves the browser and Electron editor. Export, CLI and build integrations remain planned.
+SpecRefit is a local-first workspace for inspecting OpenAPI contracts, previewing reproducible transformations and exporting the reviewed files. One shared processing implementation serves the browser and Electron editor. CLI and build integrations remain planned.
 
-**Status: inspection and transformation preview, not a product release.** Open YAML/JSON contracts, browse operations by tag, search/filter, inspect parameters, request bodies, responses and security, follow schemas and recursive references, and supply missing reference files. Representative OpenAPI 3.0.4, 3.1.2 and 3.2.0 fixtures are tested; this is not a complete OpenAPI/JSON Schema validator. Read the [support boundaries and evidence](docs/architecture/viewer.md) before relying on partial inspection. Select media types and extract inline schemas into named shared models, with ordered rules and exact output previews. See [transformation behavior and limits](docs/architecture/transformations.md). Comparison, export, a product CLI and native installers are not implemented.
+**Status: inspection, transformation and export preview, not a product release.** Open YAML/JSON contracts, browse operations by tag, search/filter, inspect parameters, request bodies, responses and security, follow schemas and recursive references, and supply missing reference files. Representative OpenAPI 3.0.4, 3.1.2 and 3.2.0 fixtures are tested; this is not a complete OpenAPI/JSON Schema validator. Read the [support boundaries and evidence](docs/architecture/viewer.md) before relying on partial inspection. Select media types and extract inline schemas into named shared models, with ordered rules and exact output previews. See [transformation behavior and limits](docs/architecture/transformations.md). Export reviewed files directly or as a browser ZIP for multiple files. Comparison, a product CLI and native installers are not implemented.
 
 ## Start here
 
@@ -30,7 +30,7 @@ Read these documents before implementing features. They are intended to make a f
 6. Reapply the same configuration through the editor, CLI or a build integration.
 7. Compare successive source contract versions after applying the same rules.
 
-Source documents remain protected. SpecRefit outputs ordinary OpenAPI documents that Fabrikt or another downstream tool can consume without knowing SpecRefit was involved.
+Source documents remain protected. SpecRefit outputs ordinary OpenAPI documents that [Fabrikt](https://github.com/fabrikt-io/fabrikt) or another downstream tool can consume without knowing SpecRefit was involved.
 
 ## Repositories and identity
 
@@ -94,11 +94,13 @@ Successful main builds automatically publish complete development downloads unde
 
 `package:desktop` creates a Linux x64 development bundle at `artifacts/specrefit-linux-x64/`, including Electron, application files, Apache-2.0 and third-party notices. Launch its `electron` executable; the package test starts it without Node on PATH. This is an experimental Linux package, **not** native Windows/macOS support or clean-machine acceptance. Windows/macOS packages, installers, signing, auto-update design and stable release distribution remain open.
 
-Transformation previews now generate in-memory contract output. Cross-runtime checks compare exact output file names and bytes as well as inspection results. Full project configuration, CLI/source-output protection, export, archive/fetch security, native acceptance, coverage import and SonarQube remain future work. See [ROADMAP.md](ROADMAP.md).
+Transformation previews generate the exact contract output used by export. Cross-runtime checks compare output file names, contract bytes and ZIP bytes as well as inspection results. Electron protects imported source identities when saving files. Full project configuration, CLI, archive import/fetch security, native acceptance, coverage import and SonarQube remain future work. See [ROADMAP.md](ROADMAP.md).
 
 ### Preview transformations
 
-Choose media types in an operation's request or response and add a selection rule. Open an inline schema to extract a shared model with a suggested, editable name. In **Rules and preview**, reorder or remove rules and run **Preview these rules** to review the changes and exact resulting files. Copy the rules JSON to save it externally; paste it back to replay against the same logical input locations. Originals are never written. Under **Output**, enable **Bundle external references into one file** and choose YAML or JSON. This also works without transformation rules. See [bundling behavior and boundaries](docs/architecture/bundling.md). Contract export remains planned.
+Choose media types in an operation's request or response and add a selection rule. Open an inline schema to extract a shared model with a suggested, editable name. In **Rules and preview**, reorder or remove rules and run **Preview these rules** to review the changes and exact resulting files. Copy the rules JSON to save it externally; paste it back to replay against the same logical input locations. Originals are never written. Under **Output**, enable **Bundle external references into one file** and choose YAML or JSON. This also works without transformation rules. See [bundling behavior and boundaries](docs/architecture/bundling.md).
+
+After reviewing, choose **Export reviewed output**. A single YAML/JSON file downloads or saves directly. For multiple files, the browser downloads a ZIP preserving the folder structure; extract it into a separate output folder. The desktop app asks for an output folder and writes the reviewed files there directly. It checks all destinations against source paths and file identities before writing and permits replacement of non-source outputs. A failure during a multi-file save reports how many files were saved; it never reports a partial export as successful. Absolute references and documents mapped across URI origins require bundling first. See [export behavior, source protection and limitations](docs/architecture/export.md). Configuration-file export remains planned.
 
 ## Built in collaboration with ChatGPT Codex
 
