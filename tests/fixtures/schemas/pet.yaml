@@ -1,0 +1,12 @@
+# This description belongs to Pet and must remain available in the source.
+type: object
+description: A pet at the shelter. Friends can refer back to this same model.
+required: [id, name]
+properties:
+  id: {type: integer, format: int64}
+  name: {type: string, description: The pet's name.}
+  status: {type: string, enum: [available, pending, adopted]}
+  friends:
+    type: array
+    items: {$ref: '#'}
+x-display-order: [name, status, id]

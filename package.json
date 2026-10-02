@@ -1,0 +1,33 @@
+{
+  "name": "specrefit",
+  "version": "0.1.0-dev",
+  "private": true,
+  "description": "Local OpenAPI contract inspection",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "apps/desktop/main.cjs",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "build": "node scripts/build.mjs",
+    "start": "node scripts/serve.mjs",
+    "desktop": "electron .",
+    "test": "node --test tests/engine.test.ts",
+    "test:browser": "playwright test",
+    "test:desktop": "xvfb-run -a node --test tests/desktop.test.mjs",
+    "package:desktop": "node scripts/package-desktop.mjs"
+  },
+  "dependencies": {
+    "jsonc-parser": "3.3.1",
+    "yaml": "2.9.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.19.1",
+    "electron": "44.5.1",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2"
+  }
+}

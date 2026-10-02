@@ -1,4 +1,4 @@
-# Local development output; refine when the toolchain is chosen.
+# Local development output.
 node_modules/
 dist/
 coverage/
@@ -7,6 +7,10 @@ coverage/
 *.log
 .DS_Store
 Thumbs.db
+artifacts/
+test-results/
+playwright-report/
+.cache/
 
 # Credentials and machine-local environment settings must not be committed.
 .env

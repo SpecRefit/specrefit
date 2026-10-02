@@ -1,8 +1,8 @@
 # SpecRefit
 
-SpecRefit is a planned local-first workspace for inspecting, validating and adapting OpenAPI contracts through reproducible rules. The same processing engine will serve a browser editor, a desktop application, a standalone CLI and build integrations.
+SpecRefit is a local-first workspace for inspecting and, in future, adapting OpenAPI contracts through reproducible rules. One shared processing implementation serves the browser and Electron viewer. Transformation, CLI and build integrations remain planned.
 
-**Status: design and repository foundation. No application, engine, plugin or downloadable release exists yet.** This repository currently records the agreed requirements and development plan; it does not claim that any planned feature works.
+**Status: read-only viewer preview, not a product release.** Open YAML/JSON contracts, browse operations by tag, search/filter, inspect parameters, request bodies, responses and security, follow schemas and recursive references, and supply missing reference files. Representative OpenAPI 3.0.4, 3.1.2 and 3.2.0 fixtures are tested; this is not a complete OpenAPI/JSON Schema validator. Read the [support boundaries and evidence](docs/architecture/viewer.md) before relying on partial inspection. Editing, transformations, comparison, export, a product CLI and native installers are not implemented.
 
 ## Start here
 
@@ -39,7 +39,58 @@ The website is independently maintained. Product modules belong together in this
 
 ## Development status
 
-There are no build, test or installation commands yet. Do not infer working commands or install a toolchain from this README. The next task is the bounded technical feasibility work in [ROADMAP.md](ROADMAP.md), followed by a tested implementation skeleton. Update this section with verified commands when that skeleton exists.
+On the owner's Windows workstation, run all commands below **inside Ubuntu WSL**. Node is a development prerequisite only; the Electron distribution includes its own runtime. The installed tools persist on D:, but a shell's `export PATH` does not persist. Repeat these exports in a new Ubuntu shell, or use the explicit PowerShell invocation documented in [AGENTS.md](AGENTS.md).
+
+```bash
+cd /mnt/d/GitHub/specrefit
+export PATH="/mnt/d/devtools/node/node-v24.21.0-linux-x64/bin:$PATH"
+export PLAYWRIGHT_BROWSERS_PATH=/mnt/d/devtools/playwright
+export electron_config_cache=/mnt/d/devtools/electron-cache
+```
+
+One-time setup for a fresh checkout (development dependencies and explicit runtime/browser downloads need network access):
+
+```bash
+npm ci --ignore-scripts --cache /mnt/d/devtools/npm-cache
+node node_modules/electron/install.js
+npx playwright install chromium firefox webkit
+```
+
+Ubuntu prerequisites include Xvfb and unzip. When Playwright reports missing system libraries, the owner installs them explicitly with `sudo /mnt/d/devtools/node/node-v24.21.0-linux-x64/bin/node node_modules/playwright/cli.js install-deps`. Do not run builds/tests with Windows Node as a fallback. Other development machines may use their own Linux Node 24 installation and cache paths.
+
+Start the browser viewer:
+
+```bash
+npm run build
+npm start
+```
+
+Open [the local viewer](http://127.0.0.1:4173). This development server serves static application assets on loopback; it has no contract upload, processing or proxy endpoint. Choose **Explore an example**, **Open contract files**, or **Open a folder**. Folder selection preserves relative paths. Select the correct **Entry document** if needed. **Diagnostics** offers a file picker for each missing document, assigning the supplied file to the exact requested URI. Mappings are session-only in this preview. Closing/reloading discards the session; originals are never modified.
+
+On wide screens, the operation list and details scroll independently. Selecting an operation keeps your place in the list and opens its details at the top. On narrow screens, selection brings the details into view.
+
+The production browser files are in `dist/web`; they can be served as static assets. No hosted editor has been deployed. Electron opens the same built files locally:
+
+```bash
+npm run desktop
+```
+
+Verified checks (WSL, 2026-10-02):
+
+```bash
+npm run check          # TypeScript checks
+npm test               # 30 engine/semantic/security cases
+npm run test:browser   # 21 cases in Chromium, Firefox and WebKit; includes Node parity
+npm run test:desktop   # Electron parity and sandbox checks; package test skipped unless enabled
+npm run package:desktop
+SPECREFIT_TEST_PACKAGE=1 npm run test:desktop
+```
+
+Pull requests targeting `main` and pushes to `main` run the [Build workflow](.github/workflows/build.yml) on GitHub's Ubuntu 24.04 runner with Node 24.21.0: `npm ci --ignore-scripts`, `npm run check`, `npm test`, then `npm run build`. The `Build` check must succeed on an up-to-date PR before merging, alongside the existing code-owner approval rule. There are no path filters that skip documentation-only PRs. Browser tests, Electron packaging and native multi-OS acceptance remain separate checks; a green build does not establish those results.
+
+`package:desktop` creates a Linux x64 development bundle at `artifacts/specrefit-linux-x64/`, including Electron, application files, Apache-2.0 and third-party notices. Launch its `electron` executable; the package test starts it without Node on PATH. This is a WSL packaging experiment, **not** native Windows/macOS support or clean-machine acceptance. Windows/macOS packages, installers, signing, auto-update design and release distribution remain open.
+
+No generated contract output exists yet. Cross-runtime checks compare complete inspection results and retained source text, not transformed contract bytes. Configuration/rule tests, CLI/source-output protection integration, editing/export E2E, archive/fetch security, native acceptance, coverage import and SonarQube remain future work. See [ROADMAP.md](ROADMAP.md).
 
 ## License
 

@@ -69,6 +69,8 @@ If processing Y blocks, show available analysis and the blocking reasons without
 
 ## Quality and product experience
 
+The owner authorized an initial read-only viewer on 2026-10-02: grouped/searchable operations, complete operation inspection, schema/reference navigation including recursive models, multi-file input, targeted missing-reference supply, and actionable diagnostics with partial inspection. The [viewer scope](../architecture/viewer.md) records the agreed experience and evidence. Editing, transformation, comparison and export remain required later. Electron is the agreed desktop direction with a shared browser/desktop editor and processing implementation; native compatibility is subject to verification.
+
 Safety, useful diagnostics, maintainability and usable workflows are product requirements. Shared code alone is not proof of parity: compare actual outputs across runtimes. Verify distributions on clean supported operating systems without developer tools. Include keyboard accessibility and meaningful errors in UI acceptance.
 
 The first end-to-end implementation scenario is inspecting a multi-file contract, preferring JSON where offered, previewing changes, saving configuration and exporting or repeating through the CLI. This is development sequencing, not permission to remove other agreed requirements. Authentication preference transformations, model merging and reference cleanup were exploratory ideas; they need separate semantic design before becoming transformation commitments. Listing security requirements for inspection is within scope.

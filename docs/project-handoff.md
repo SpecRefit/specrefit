@@ -22,8 +22,12 @@ The domain is managed at TransIP. The landing page is hosted by GitHub Pages fro
 
 ## Resume development
 
-Open or clone the product repository as the primary folder of a new local project/chat. Its AGENTS.md carries the testing, WSL, storage, safety and handoff requirements. No application code or build/test toolchain exists yet; the Apache 2.0 license is already selected and committed.
+Open or clone the product repository as the primary folder of a new local project/chat. Its AGENTS.md carries the testing, WSL, storage, safety and handoff requirements. A read-only browser/Electron viewer now exists on the implementation branch; see README.md for verified commands and docs/architecture/viewer.md for evidence and support boundaries. Apache 2.0 remains the selected license.
 
-The next task is milestone 1 of ROADMAP.md: validate the proposed shared TypeScript/browser/CLI stack and libraries with multi-file references, comment preservation, bundling and byte-identical output. Record the evidence and unresolved gaps before adopting the stack. Do not interpret the initial JSON-preference workflow as permission to discard the remaining product requirements.
+The next task is owner review of the first viewer, followed by the remaining work in ROADMAP.md. Broader schema/reference coverage, native distribution/clean-machine acceptance, transformation-time comment preservation, bundling, byte-identical contract output and runtime-inclusive CLI/Maven feasibility remain open. The viewer does not implement editing, transformation, comparison or export; those product requirements remain accepted.
+
+The WSL development runtime is installed persistently at `/mnt/d/devtools/node/node-v24.21.0-linux-x64/bin`; browser binaries are at `/mnt/d/devtools/playwright`. A terminal's PATH export is temporary. Use the explicit Linux tool invocation in AGENTS.md or the setup exports in README.md in a fresh session. The owner installed Ubuntu Xvfb/unzip and WebKit system dependencies on 2026-10-02. Report any additional missing WSL prerequisites with installation instructions.
+
+Use ordinary `codex/` branches in the existing D: checkout, without worktrees. Avoid concurrent branch changes or writes from different chats. Central product/architecture decisions remain in the decision chat; implementation chats carry out agreed work. PR review from code owner `@mrhoeve` is required; do not merge or bypass review. Website and profile repositories are not part of viewer changes.
 
 GitKraken originally needed separate OAuth approval for this new GitHub organization. The owner reported resolving that access issue. If authentication fails in a new environment, diagnose that client's credentials; do not change repository visibility or weaken organization-wide app restrictions as a workaround.
