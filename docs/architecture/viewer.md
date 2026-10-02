@@ -63,6 +63,8 @@ The owner's 12,923,354-byte GitHub REST OpenAPI 3.0.3 document exposed the origi
 
 The committed regression fixture generates a contract larger than 12 MB with 1,200 operations, 1,000 schemas and more than 100,000 values. Engine and all three browser tests cover completeness and navigation. Separate tests retain strict JSON rejection, escaped duplicate-key detection, precise source positions and visible over-limit errors with recovery. Resource bounds and the worker timeout remain necessary; this is not an exhaustive capacity claim.
 
+Long operation lists and contract details scroll independently above 580 CSS pixels viewport width. Selecting an operation preserves the sidebar position and opens its details at the top with keyboard focus. Schema/source navigation also starts at the top of the detail pane. On narrower screens, the stacked layout scrolls the selected details into view. Browser regressions exercise wheel scrolling in both panes, keyboard selection near the end of 1,200 operations, a schema near the end of 1,000 models and narrow-screen navigation. A local check with the owner's GitHub document also selected its last operation without moving the page or losing the sidebar position.
+
 ## Implemented behavior and explicit limits
 
 - Operations: tag groups, text/method/tag filtering, standard methods, OpenAPI 3.2 QUERY/additionalOperations, webhooks and callbacks. Path-level parameters combine with operation-level overrides by name/location; operation security overrides global security, including an empty array. Security alternatives are OR; schemes inside one alternative are AND. Media types, schemas, response headers/links, server values and every original operation field are inspectable. This is not a request execution client.

@@ -85,6 +85,25 @@ test('large local JSON import remains navigable and searchable', async ({ page }
   await page.goto('/');
   await page.getByLabel('Open contract files', { exact: true }).setInputFiles({ name: 'large.json', mimeType: 'application/json', buffer: Buffer.from(largeContract()) });
   await expect(page.locator('#status')).toContainText('1200 operations. 0 diagnostics.', { timeout: 20_000 });
+  // A long operation list must not push the detail pane down or scroll it.
+  const sidebar = page.locator('.sidebar');
+  const pane = page.locator('#content');
+  await sidebar.hover(); await page.mouse.wheel(0, 1800);
+  await expect.poll(() => sidebar.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
+  expect(await pane.evaluate(el => el.scrollTop)).toBe(0);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  await pane.hover(); await page.mouse.wheel(0, 700);
+  await expect.poll(() => pane.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
+  const nearBottom = page.getByRole('navigation', { name: 'Operations by tag' }).getByRole('button').last();
+  await nearBottom.scrollIntoViewIfNeeded();
+  const listPosition = await sidebar.evaluate(el => el.scrollTop);
+  await nearBottom.focus(); await page.keyboard.press('Enter');
+  await expect(pane).toBeFocused();
+  await expect.poll(() => pane.evaluate(el => el.scrollTop)).toBe(0);
+  expect(Math.abs(await sidebar.evaluate(el => el.scrollTop) - listPosition)).toBeLessThan(2);
+  await expect(pane.locator('h1')).toBeInViewport();
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  // Reset the list through search, then inspect a schema near the bottom of its own pane.
   await page.getByRole('searchbox', { name: 'Search operations' }).fill('/items/1199');
   const operations = page.getByRole('navigation', { name: 'Operations by tag' }).getByRole('button');
   await expect(operations).toHaveCount(1);
@@ -94,6 +113,12 @@ test('large local JSON import remains navigable and searchable', async ({ page }
   await expect(page.locator('.schema-button')).toHaveCount(1000);
   await page.getByRole('button', { name: 'Model999 →', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Model999', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Model999', exact: true })).toBeInViewport();
+  expect(await pane.evaluate(el => el.scrollTop)).toBe(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('navigation', { name: 'Operations by tag' }).getByRole('button').click();
+  await expect(pane.locator('h1')).toBeInViewport();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 });
 
 test('file limit failures are visible and allow a new selection', async ({ page }, info) => {

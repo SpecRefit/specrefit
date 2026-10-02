@@ -67,6 +67,8 @@ npm start
 
 Open [the local viewer](http://127.0.0.1:4173). This development server serves static application assets on loopback; it has no contract upload, processing or proxy endpoint. Choose **Explore an example**, **Open contract files**, or **Open a folder**. Folder selection preserves relative paths. Select the correct **Entry document** if needed. **Diagnostics** offers a file picker for each missing document, assigning the supplied file to the exact requested URI. Mappings are session-only in this preview. Closing/reloading discards the session; originals are never modified.
 
+On wide screens, the operation list and details scroll independently. Selecting an operation keeps your place in the list and opens its details at the top. On narrow screens, selection brings the details into view.
+
 The production browser files are in `dist/web`; they can be served as static assets. No hosted editor has been deployed. Electron opens the same built files locally:
 
 ```bash

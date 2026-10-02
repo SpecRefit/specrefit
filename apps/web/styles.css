@@ -513,6 +513,38 @@ details>summary {
 button,select,input,summary {
   touch-action:manipulation
 }
+@media(min-width:581px) {
+  body.inspecting {
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden
+  }
+  .inspecting>.app-header,.inspecting>.feedback,.inspecting>.status {
+    flex:none
+  }
+  .inspecting #app {
+    display:flex;
+    flex-direction:column;
+    flex:1;
+    min-height:0
+  }
+  .inspecting .toolbar,.inspecting .tabs {
+    flex:none
+  }
+  .inspecting .workspace {
+    flex:1;
+    min-height:0;
+    width:100%;
+    overflow:hidden
+  }
+  .inspecting .sidebar,.inspecting .content {
+    min-height:0;
+    overflow:auto;
+    overscroll-behavior:contain;
+    scrollbar-gutter:stable
+  }
+}
 @media(max-width:800px) {
   .product-label {
     display:none

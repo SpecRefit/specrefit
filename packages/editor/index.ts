@@ -21,7 +21,10 @@ export function mount(host: HTMLElement, sample: Source[]) {
   const clearFeedback = () => { feedback.hidden = true; feedback.textContent = ''; };
   const fail = (message: string) => { status.textContent = ''; feedback.textContent = message; feedback.hidden = false; feedback.scrollIntoView({ block: 'nearest' }); };
   const announce = (message: string) => { status.textContent = message; };
-  const focusPane = () => { pane.tabIndex = -1; pane.focus(); };
+  const focusPane = () => {
+    pane.scrollTop = 0; pane.tabIndex = -1; pane.focus({ preventScroll: true });
+    if (window.matchMedia('(max-width: 580px)').matches) pane.scrollIntoView({ block: 'start' });
+  };
   function process() {
     clearFeedback();
     worker?.terminate(); const run = ++generation;
@@ -218,6 +221,8 @@ export function mount(host: HTMLElement, sample: Source[]) {
     }
   }
   function render() {
+    const sidebarScroll = host.querySelector('.sidebar')?.scrollTop ?? 0;
+    document.body.classList.toggle('inspecting', !!report);
     host.replaceChildren();
     if (!report) {
       const main = el('main', '', 'welcome'); main.id = 'content';
@@ -264,6 +269,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
     }
     input.addEventListener('input', () => { search = input.value; updateList(); }); filter.addEventListener('change', () => { method = filter.value; updateList(); }); tags.addEventListener('change', () => { activeTag = tags.value; updateList(); }); updateList();
     pane = el('main', '', 'content'); pane.id = 'content'; layout.append(sidebar, pane); host.append(layout); showSelected();
+    sidebar.scrollTop = sidebarScroll;
   }
   render();
 }
