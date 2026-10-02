@@ -1,4 +1,5 @@
 import { isScalar, LineCounter, parseDocument, visit } from 'yaml';
+import { visit as visitJSON, type JSONPath } from 'jsonc-parser';
 
 export type Value = null | boolean | number | string | Value[] | { [key: string]: Value };
 export type ObjectValue = { [key: string]: Value };
@@ -20,7 +21,7 @@ export interface Inspection {
   references: Reference[]; diagnostics: Diagnostic[];
   locations: Location[];
 }
-export const limits = { files: 64, fileBytes: 2_000_000, totalBytes: 8_000_000, nodes: 100_000, depth: 80 };
+export const limits = { files: 64, fileBytes: 20_000_000, totalBytes: 40_000_000, nodes: 1_000_000, depth: 80 };
 export const object = (v: unknown): v is ObjectValue => v !== null && typeof v === 'object' && !Array.isArray(v);
 export const string = (v: unknown): string => typeof v === 'string' ? v : '';
 const own = (v: object, key: string) => Object.hasOwn(v, key);
@@ -46,7 +47,7 @@ export function canonical(id: string, relativeTo = base): string {
 export function displayId(id: string): string { return id.startsWith(base) ? id.slice(base.length) : id; }
 
 type Role = 'root' | 'path' | 'operation' | 'parameter' | 'body' | 'response' | 'media' | 'schema' | 'callback' | 'example' | 'header' | 'security' | 'link';
-interface Parsed { source: Source; value?: Value; ast?: ReturnType<typeof parseDocument>; lines: LineCounter }
+interface Parsed { source: Source; value?: Value; ast?: ReturnType<typeof parseDocument>; lines: LineCounter; positions?: Map<string, { line: number; column: number }> }
 
 /** Pure in-memory inspection. No filesystem, network, browser or Electron APIs. */
 export function inspect(input: unknown): Inspection {
@@ -54,6 +55,11 @@ export function inspect(input: unknown): Inspection {
   const docs = new Map<string, Parsed>();
   function location(document: string, pointer = ''): Location {
     const d = docs.get(document);
+    if (d?.positions) {
+      let parent = pointer;
+      while (!d.positions.has(parent) && parent) parent = parent.slice(0, parent.lastIndexOf('/'));
+      return { document, pointer, ...d.positions.get(parent) ?? { line: 1, column: 1 } };
+    }
     const keys = pointer ? pointer.slice(1).split('/').map(k => k.replace(/~1/g, '/').replace(/~0/g, '~')) : [];
     let node = d?.ast?.getIn(keys, true) as { range?: number[] } | undefined;
     while (!node && keys.length) { keys.pop(); node = d?.ast?.getIn(keys, true) as { range?: number[] } | undefined; }
@@ -78,26 +84,55 @@ export function inspect(input: unknown): Inspection {
     if (docs.has(id)) { diagnostic('DUPLICATE_DOCUMENT', 'Two supplied files have the same location. Supply distinct paths; no file was substituted.', id); continue; }
     const count = new TextEncoder().encode(candidate.text).length;
     bytes += count;
-    if (count > limits.fileBytes || bytes > limits.totalBytes) { diagnostic('LIMIT', 'Input exceeds the 2 MB per document or 8 MB project limit.', id); continue; }
+    if (count > limits.fileBytes || bytes > limits.totalBytes) { diagnostic('LIMIT', 'Input exceeds the 20 MB per document or 40 MB project limit.', id); continue; }
     const d: Parsed = { source: { id, text: candidate.text }, lines: new LineCounter() };
     docs.set(id, d);
     try {
-      // JSON text must satisfy JSON syntax, even though YAML provides the location tree.
-      if (/\.json$/i.test(new URL(id).pathname)) JSON.parse(candidate.text);
-      d.ast = parseDocument(candidate.text, { lineCounter: d.lines, keepSourceTokens: true, uniqueKeys: true, strict: true });
-      if (d.ast.errors.length) {
-        for (const error of d.ast.errors) {
-          const pos = d.lines.linePos(error.pos[0]);
-          result.diagnostics.push({ code: 'SYNTAX', severity: 'error', message: 'Invalid or ambiguous document syntax. Check this source location; this file is not interpreted.', location: { document: id, pointer: '', line: pos.line, column: pos.col } });
+      let value: unknown;
+      if (/\.json$/i.test(new URL(id).pathname)) {
+        // Stream positions instead of allocating a YAML syntax tree for large JSON files.
+        d.positions = new Map();
+        let count = 0;
+        const keys: Set<string>[] = [];
+        const position = (_offset: number, _length: number, line: number, column: number, path: () => JSONPath) => {
+          const parts = path();
+          if (++count > limits.nodes || parts.length > limits.depth) throw new Error('limit');
+          d.positions!.set(parts.length ? '/' + parts.map(p => escapePointer(String(p))).join('/') : '', { line: line + 1, column: column + 1 });
+        };
+        visitJSON(candidate.text, {
+          onObjectBegin: (...args) => { position(...args); keys.push(new Set()); },
+          onObjectEnd: () => { keys.pop(); },
+          onArrayBegin: position,
+          onLiteralValue: (_value, ...args) => position(...args),
+          onObjectProperty: (key, _offset, _length, line, column) => {
+            if (keys.at(-1)!.has(key)) {
+              result.diagnostics.push({ code: 'SYNTAX', severity: 'error', message: 'Duplicate JSON property. Give each property a unique name; this file is not interpreted.', location: { document: id, pointer: '', line: line + 1, column: column + 1 } });
+              throw new Error('duplicate');
+            }
+            keys.at(-1)!.add(key);
+          },
+          onError: (_error, _offset, _length, line, column) => {
+            result.diagnostics.push({ code: 'SYNTAX', severity: 'error', message: 'Invalid JSON syntax. Check this source location; comments and trailing commas are not allowed.', location: { document: id, pointer: '', line: line + 1, column: column + 1 } });
+            throw new Error('syntax');
+          },
+        }, { disallowComments: true, allowTrailingComma: false, allowEmptyContent: false });
+        value = JSON.parse(candidate.text);
+      } else {
+        d.ast = parseDocument(candidate.text, { lineCounter: d.lines, keepSourceTokens: true, uniqueKeys: true, strict: true });
+        if (d.ast.errors.length) {
+          for (const error of d.ast.errors) {
+            const pos = d.lines.linePos(error.pos[0]);
+            result.diagnostics.push({ code: 'SYNTAX', severity: 'error', message: 'Invalid or ambiguous document syntax. Check this source location; this file is not interpreted.', location: { document: id, pointer: '', line: pos.line, column: pos.col } });
+          }
+          continue;
         }
-        continue;
+        for (const warning of d.ast.warnings) diagnostic('YAML_CONSTRUCT', `YAML construct ${warning.code} is not interpreted reliably; this file is available as source only.`, id);
+        if (d.ast.warnings.length) continue;
+        visit(d.ast, { Pair(_key, pair) {
+          if (!isScalar(pair.key) || typeof pair.key.value !== 'string') throw new Error('Non-string mapping key');
+        } });
+        value = d.ast.toJS({ maxAliasCount: 0 });
       }
-      for (const warning of d.ast.warnings) diagnostic('YAML_CONSTRUCT', `YAML construct ${warning.code} is not interpreted reliably; this file is available as source only.`, id);
-      if (d.ast.warnings.length) continue;
-      visit(d.ast, { Pair(_key, pair) {
-        if (!isScalar(pair.key) || typeof pair.key.value !== 'string') throw new Error('Non-string mapping key');
-      } });
-      const value: unknown = d.ast.toJS({ maxAliasCount: 0 });
       let nodes = 0;
       const check = (v: unknown, depth: number): void => {
         if (++nodes > limits.nodes || depth > limits.depth) throw new Error('limit');

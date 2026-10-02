@@ -17,37 +17,41 @@ export function mount(host: HTMLElement, sample: Source[]) {
   const history: (() => void)[] = [];
   let currentPage: () => void = () => showSelected();
   const status = document.querySelector<HTMLElement>('#status')!;
+  const feedback = document.querySelector<HTMLElement>('#feedback')!;
+  const clearFeedback = () => { feedback.hidden = true; feedback.textContent = ''; };
+  const fail = (message: string) => { status.textContent = ''; feedback.textContent = message; feedback.hidden = false; feedback.scrollIntoView({ block: 'nearest' }); };
   const announce = (message: string) => { status.textContent = message; };
   const focusPane = () => { pane.tabIndex = -1; pane.focus(); };
   function process() {
+    clearFeedback();
     worker?.terminate(); const run = ++generation;
     announce('Reading your contract locally…');
     const current = worker = new Worker(new URL('./worker.js', document.baseURI), { type: 'module' });
     const timer = window.setTimeout(() => {
-      current.terminate(); if (run === generation) announce('Inspection exceeded 10 seconds and was stopped. Try fewer or smaller files.');
+      current.terminate(); if (run === generation) fail('Inspection exceeded 10 seconds and was stopped. Try fewer or smaller files.');
     }, 10_000);
     current.onmessage = event => {
       clearTimeout(timer); current.terminate(); if (run !== generation) return;
-      if (event.data.error) { announce(event.data.error); return; }
+      if (event.data.error) { fail(event.data.error); return; }
       report = event.data.report; selected = Math.min(selected, Math.max(0, report!.operations.length - 1));
       history.length = 0; render(); announce(`${report!.operations.length} operations. ${report!.diagnostics.length} diagnostics. Inspection is not a full specification validation.`);
     };
-    current.onerror = () => { clearTimeout(timer); current.terminate(); announce('The inspection worker could not start. Reload the app and try again.'); };
+    current.onerror = () => { clearTimeout(timer); current.terminate(); if (run === generation) fail('The inspection worker could not start. Reload the app and try again.'); };
     current.postMessage({ entry, sources });
   }
   async function importFiles(files: FileList | null, target?: string) {
     if (!files?.length) return;
     const list = [...files];
     if (list.length + sources.length > limits.files || list.some(f => f.size > limits.fileBytes) || list.reduce((n, f) => n + f.size, sources.reduce((n, s) => n + new TextEncoder().encode(s.text).length, 0)) > limits.totalBytes) {
-      announce('Open at most 64 files, 2 MB per file and 8 MB in total. No files were added.'); return;
+      fail(`Open at most ${limits.files} files, ${limits.fileBytes / 1_000_000} MB per file and ${limits.totalBytes / 1_000_000} MB in total. Your selection is ${list.reduce((n, f) => n + f.size, 0).toLocaleString('en-US')} bytes. No files were added.`); return;
     }
     try {
       const added = await Promise.all(list.map(async f => ({ id: target ?? canonical((f.webkitRelativePath || f.name).split('/').map(encodeURIComponent).join('/')), text: await f.text() })));
-      if (new Set([...sources, ...added].map(s => canonical(s.id))).size !== sources.length + added.length) { announce('A file with this location is already open. Use a folder to retain distinct paths, or start a new project. No files were replaced.'); return; }
+      if (new Set([...sources, ...added].map(s => canonical(s.id))).size !== sources.length + added.length) { fail('A file with this location is already open. Use a folder to retain distinct paths, or start a new project. No files were replaced.'); return; }
       sources.push(...added);
       if (!entry) entry = added.find(s => /(?:^|\/)(?:openapi|swagger|api)\.(?:ya?ml|json)$/i.test(s.id))?.id ?? added[0].id;
       process();
-    } catch { announce('The selected file could not be read. No contract is uploaded to a server.'); }
+    } catch { fail('The selected file could not be read. No contract is uploaded to a server.'); }
   }
   function picker(title: string, folder = false, target?: string) {
     const input = el('input'); input.type = 'file'; input.multiple = !target; input.accept = '.json,.yaml,.yml';
@@ -227,7 +231,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
       main.append(guide); host.append(main); return;
     }
     const toolbar = el('div', '', 'toolbar'); const title = el('div'); title.append(el('strong', report.title), el('span', `OpenAPI ${report.version || 'unknown'} · ${sources.length} files`, 'muted'));
-    const actions = el('div', '', 'actions'); actions.append(picker('Add files'), picker('Add folder', true), button('New project', () => { worker?.terminate(); generation++; sources = []; entry = ''; report = undefined; search = ''; method = ''; activeTag = ''; view = 'operations'; render(); announce('Ready to open a new project.'); })); toolbar.append(title, actions); host.append(toolbar);
+    const actions = el('div', '', 'actions'); actions.append(picker('Add files'), picker('Add folder', true), button('New project', () => { worker?.terminate(); generation++; clearFeedback(); sources = []; entry = ''; report = undefined; search = ''; method = ''; activeTag = ''; view = 'operations'; render(); announce('Ready to open a new project.'); })); toolbar.append(title, actions); host.append(toolbar);
     const tabs = el('nav', '', 'tabs'); tabs.setAttribute('aria-label', 'Contract views');
     for (const [id, title] of [['operations', 'Operations'], ['schemas', 'Schemas'], ['files', 'Files'], ['diagnostics', `Diagnostics${report.diagnostics.length ? ` (${report.diagnostics.length})` : ''}`]] as const) {
       const b = button(title, () => { view = id; history.length = 0; render(); focusPane(); }); if (id === view) b.setAttribute('aria-current', 'page'); tabs.append(b);

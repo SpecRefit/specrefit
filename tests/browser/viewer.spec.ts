@@ -79,3 +79,30 @@ test('empty state and narrow viewport stay usable', async ({ page }, info) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await page.screenshot({ path: `artifacts/${info.project.name}-mobile.png`, fullPage: true });
 });
+
+test('large local JSON import remains navigable and searchable', async ({ page }) => {
+  const { largeContract } = await import('../fixtures/large-contract.ts');
+  await page.goto('/');
+  await page.getByLabel('Open contract files', { exact: true }).setInputFiles({ name: 'large.json', mimeType: 'application/json', buffer: Buffer.from(largeContract()) });
+  await expect(page.locator('#status')).toContainText('1200 operations. 0 diagnostics.', { timeout: 20_000 });
+  await page.getByRole('searchbox', { name: 'Search operations' }).fill('/items/1199');
+  const operations = page.getByRole('navigation', { name: 'Operations by tag' }).getByRole('button');
+  await expect(operations).toHaveCount(1);
+  await operations.click();
+  await expect(page.getByRole('heading', { name: 'Read item 1199', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Schemas', exact: true }).click();
+  await expect(page.locator('.schema-button')).toHaveCount(1000);
+  await page.getByRole('button', { name: 'Model999 →', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Model999', exact: true })).toBeVisible();
+});
+
+test('file limit failures are visible and allow a new selection', async ({ page }, info) => {
+  await page.goto('/');
+  await page.getByLabel('Open contract files', { exact: true }).setInputFiles({ name: 'too-large.json', mimeType: 'application/json', buffer: Buffer.alloc(20_000_001, 32) });
+  await expect(page.getByRole('alert')).toBeInViewport();
+  await expect(page.getByRole('alert')).toContainText('20 MB per file and 40 MB in total');
+  await page.screenshot({ path: `artifacts/${info.project.name}-file-limit.png`, fullPage: true });
+  await page.getByRole('button', { name: 'Explore an example' }).click();
+  await expect(page.getByRole('heading', { name: 'Find your next companion', exact: true })).toBeVisible();
+  await expect(page.getByRole('alert')).toBeHidden();
+});

@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parseDocument } from 'yaml';
-import { inspect, canonical, valueAt, type Value } from '../packages/engine/index.ts';
+import { inspect, canonical, valueAt, limits, type Value } from '../packages/engine/index.ts';
+import { largeContract } from './fixtures/large-contract.ts';
 
 const source = (value: unknown, id = 'api.json') => ({ id, text: JSON.stringify(value) });
 const operation = { responses: { '200': { description: 'OK' } } };
@@ -109,7 +110,7 @@ test('hostile input and prototype pointer lookups are bounded', () => {
   assert.equal(valueAt({} as Value, '/__proto__'), undefined);
   assert.throws(() => canonical('file:///etc/passwd'));
   assert.throws(() => canonical('https://user:password@example.invalid/a'));
-  assert.ok(inspect({ entry: 'a', sources: [{ id: 'a', text: 'x'.repeat(2_000_001) }] }).diagnostics.some(d => d.code === 'LIMIT'));
+  assert.ok(inspect({ entry: 'a', sources: [{ id: 'a', text: 'x'.repeat(limits.fileBytes + 1) }] }).diagnostics.some(d => d.code === 'LIMIT'));
   let nested: unknown = 0; for (let i = 0; i < 100; i++) nested = { x: nested };
   assert.ok(run(nested).diagnostics.some(d => d.code === 'PARSE'));
 });
@@ -163,4 +164,33 @@ test('schema property names beginning x- are real properties, not ignored extens
 test('inline schema navigation exposes the schema source line, not its operation line', () => {
   const r = inspect({ entry: 'petstore.yaml', sources: [{ id: 'petstore.yaml', text: readFileSync('tests/fixtures/petstore.yaml', 'utf8') }] });
   assert.equal(r.locations.find(l => l.pointer === '/paths/~1pets/get/responses/200/content/application~1json/schema')?.line, 33);
+});
+
+test('large JSON contracts retain all operations, schemas, references and source', () => {
+  const text = largeContract();
+  assert.ok(Buffer.byteLength(text) > 12_000_000);
+  const r = inspect({ entry: 'large.json', sources: [{ id: 'large.json', text }] });
+  assert.deepEqual(r.diagnostics, []);
+  assert.equal(r.operations.length, 1200);
+  assert.equal(r.schemas.length, 1000);
+  assert.equal(r.references.filter(ref => ref.target).length, 1200);
+  assert.equal(r.operations.at(-1)?.path, '/items/1199');
+  assert.equal(r.documents[0].text, text);
+});
+
+test('JSON rejects duplicate escaped keys, comments and trailing commas without losing source', () => {
+  for (const text of ['{"x":1,"\\u0078":2}', '{"nested":[{"x":1,"x":2}]}', '{/*comment*/"x":1}', '{"x":1,}']) {
+    const r = inspect({ entry: 'bad.json', sources: [{ id: 'bad.json', text }] });
+    assert.equal(r.documents[0].value, undefined);
+    assert.equal(r.documents[0].text, text);
+    assert.ok(r.diagnostics.some(d => d.code === 'SYNTAX'));
+  }
+});
+
+test('JSON source locations retain escaped pointers and precise lines/columns', () => {
+  const text = '{\r\n  "openapi":"3.1.2",\r\n  "info":{"title":"Locations","version":"1"},\r\n  "paths":{"/a~b":{"get":4}}\r\n}';
+  const r = inspect({ entry: 'a.json', sources: [{ id: 'a.json', text }] });
+  assert.deepEqual(r.diagnostics.find(d => d.code === 'OBJECT')?.location, { document: canonical('a.json'), pointer: '/paths/~1a~0b/get', line: 4, column: 26 });
+  const valid = run(JSON.parse('{"openapi":"3.1.2","info":{"title":"Own keys","version":"1"},"paths":{},"x-data":{"__proto__":1,"constructor":2}}'));
+  assert.equal(valueAt(valid.documents[0].value, '/x-data/__proto__'), 1);
 });

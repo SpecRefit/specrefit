@@ -77,8 +77,8 @@ Verified checks (WSL, 2026-10-02):
 
 ```bash
 npm run check          # TypeScript checks
-npm test               # 27 engine/semantic/security cases
-npm run test:browser   # 15 cases in Chromium, Firefox and WebKit; includes Node parity
+npm test               # 30 engine/semantic/security cases
+npm run test:browser   # 21 cases in Chromium, Firefox and WebKit; includes Node parity
 npm run test:desktop   # Electron parity and sandbox checks; package test skipped unless enabled
 npm run package:desktop
 SPECREFIT_TEST_PACKAGE=1 npm run test:desktop

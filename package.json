@@ -6,7 +6,9 @@
   "license": "Apache-2.0",
   "type": "module",
   "main": "apps/desktop/main.cjs",
-  "engines": { "node": ">=24 <25" },
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
     "check": "tsc --noEmit",
     "build": "node scripts/build.mjs",
@@ -17,10 +19,13 @@
     "test:desktop": "xvfb-run -a node --test tests/desktop.test.mjs",
     "package:desktop": "node scripts/package-desktop.mjs"
   },
-  "dependencies": { "yaml": "2.9.1" },
+  "dependencies": {
+    "jsonc-parser": "3.3.1",
+    "yaml": "2.9.1"
+  },
   "devDependencies": {
-    "@types/node": "24.19.1",
     "@playwright/test": "1.63.0",
+    "@types/node": "24.19.1",
     "electron": "44.5.1",
     "esbuild": "0.28.2",
     "typescript": "7.0.2"

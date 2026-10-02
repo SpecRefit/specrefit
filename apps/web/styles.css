@@ -498,6 +498,15 @@ pre {
   background:white;
   min-height:2.5rem
 }
+.feedback {
+  margin:1rem 3.5%;
+  padding:1rem;
+  border:1px solid #a54121;
+  border-radius:.5rem;
+  background:#fff3ec;
+  color:#7b2c16;
+  overflow-wrap:anywhere;
+}
 details>summary {
   cursor:pointer
 }
