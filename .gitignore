@@ -1,0 +1,14 @@
+# Local development output; refine when the toolchain is chosen.
+node_modules/
+dist/
+coverage/
+.sonar/
+.scannerwork/
+*.log
+.DS_Store
+Thumbs.db
+
+# Credentials and machine-local environment settings must not be committed.
+.env
+.env.*
+!.env.example
