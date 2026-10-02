@@ -60,7 +60,8 @@ test('portable bundle starts with no Node installation on its PATH', { skip: !pr
     const built = JSON.parse(await readFile('dist/web/version.json', 'utf8'));
     assert.equal(await application.evaluate(({ app }) => app.getVersion()), built.version);
     assert.equal(await page.locator('.preview').textContent(), built.version);
-    assert.equal(await application.evaluate(() => process.env.PATH), '');
+    // Windows removes empty environment variables; neither form may expose a runtime search path.
+    assert.deepEqual(await application.evaluate(() => Object.entries(process.env).filter(([key,value]) => key.toLowerCase() === 'path' && value)), []);
     assert.equal(await application.evaluate(() => process.arch), process.arch);
     assert.equal(await application.evaluate(({app}) => app.isPackaged), true);
     const root=join(packageRoot(),desktopTarget().resources,'app');

@@ -1,6 +1,6 @@
 # Native desktop development packages
 
-Implemented packaging pipeline (2026-10-03); first native CI acceptance is pending. Runtime-inclusive portable Windows x64 and macOS arm64/x64 packages accompany Linux x64. Native GitHub Actions runners must verify each package before development publication. Installers, store distribution, Developer ID signing, notarization and clean-machine acceptance beyond these runners remain separate work.
+Implemented packaging pipeline (2026-10-03). Runtime-inclusive portable Windows x64 and macOS arm64/x64 packages accompany Linux x64. Native GitHub Actions runners must verify each package before development publication; [PR #11 checks](https://github.com/SpecRefit/specrefit/pull/11/checks) record the first native results and exact tested commit. Installers, store distribution, Developer ID signing, notarization and clean-machine acceptance beyond these runners remain separate work.
 
 ## Build dependency decision
 
