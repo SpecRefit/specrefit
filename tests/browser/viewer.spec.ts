@@ -70,6 +70,9 @@ test('real browser worker matches Node inspection exactly across formats and ver
 });
 test('empty state and narrow viewport stay usable', async ({ page }, info) => {
   await page.goto('/');
+  const built = JSON.parse(readFileSync('dist/web/version.json', 'utf8'));
+  await expect(page.locator('.preview')).toHaveText(built.version);
+  await expect(page.locator('.preview')).toHaveAttribute('title', `Build ${built.commit}${built.dirty ? ' (local changes)' : ''}`);
   await page.screenshot({ path: `artifacts/${info.project.name}-welcome.png`, fullPage: true });
   await page.getByRole('button', { name: 'Explore an example' }).click();
   await expect(page.getByRole('heading', { name: 'Find your next companion', exact: true })).toBeVisible();

@@ -30,6 +30,8 @@ On 2026-10-02 the owner authorized a first read-only viewer slice and accepted E
 
 The owner requested a required successful PR build on 2026-10-02. GitHub Actions runs type checks, engine tests and the viewer build on Ubuntu 24.04/Node 24.21.0 using locked dependencies. The `Build` status is required alongside code-owner approval, with the branch up to date. Broader browser/desktop/native CI coverage remains open; this gate does not replace it.
 
+Git-tag versioning was accepted on 2026-10-02: clean `v`-prefixed SemVer tags determine the coordinated product version, and development builds identify their commit. Implementation and boundaries are recorded in [versioning.md](versioning.md). GitHub Releases is the planned desktop/CLI download channel; Maven Central is the planned channel for the future Maven integration. Publishing workflows and native installer version mappings remain future work.
+
 ## Provisional implementation proposals
 
 - TypeScript and `yaml` are now adopted only for the bounded viewer; Electron is accepted and has a Linux runtime-bundling experiment. The broader transformation representation and Node.js-based CLI distribution remain provisional. See [viewer evidence and limitations](viewer.md).

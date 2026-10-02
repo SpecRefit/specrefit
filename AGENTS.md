@@ -63,6 +63,8 @@ SonarQube is under consideration and the project should support its analysis and
 
 ## Documentation and handoff
 
+Release versions derive from `v`-prefixed SemVer Git tags; untagged/PR builds carry commit-based development versions. Keep version logic in build tooling, never the shared engine. Do not manually bump the root development placeholder to make a release. See docs/architecture/versioning.md and README.md for `npm run test:version`, dirty/tag behavior, generated metadata and planned publication channels. Creating a versioning workflow does not authorize publishing a release.
+
 Keep prose soft-wrapped. Update requirements when the user changes behavior; update decisions with the rationale and status of architectural choices. Update the roadmap with actual completion evidence and the next actionable task. Record new verified build/test commands in README.md and reference them here. A fresh chat must be able to distinguish what exists, what is agreed and what remains unresolved.
 
 At task completion, report what changed, what was tested, any limitations and remaining decisions. Do not silently treat partial support as complete. Avoid unnecessary scaffolding, speculative features and tests for purely cosmetic or documentation-only changes.
