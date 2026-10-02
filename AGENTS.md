@@ -34,6 +34,8 @@ Before adding a dependency, record its purpose, license, maintenance status, bro
 
 Tests must establish behavior, not merely repeat implementation details. For production changes, run the relevant tests and required repository checks before claiming completion. Add reproducible regression cases for defects. Documentation-only changes need link, consistency and diff checks, not a fabricated application build.
 
+The owner requested a mandatory successful PR build on 2026-10-02. `.github/workflows/build.yml` runs locked dependency installation, type checks, engine tests and the viewer build for every PR to `main`, including documentation-only PRs. Keep the `Build` job name aligned with the required GitHub status check. Preserve the existing code-owner review rule. README.md describes the commands and the remaining CI coverage limits.
+
 Once implementation begins, provide documented commands for these layers:
 
 1. Focused engine tests for targeting, preconditions, exceptions, explicit rule order, diagnostics and deterministic output.

@@ -9,6 +9,7 @@ This roadmap sequences implementation; it does not remove the requirements in [p
 - [x] Select Apache License 2.0 and add its official text to LICENSE.
 - [ ] Validate the proposed technical stack.
 - [x] Implement the first shared viewer engine/editor with documented WSL build/test commands.
+- [ ] Verify the mandatory GitHub Actions PR build gate (type checks, engine tests and viewer build).
 - [ ] Complete and verify CI and native OS acceptance.
 - [ ] Deliver a usable product release.
 
