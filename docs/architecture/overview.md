@@ -1,6 +1,6 @@
 # Architecture direction
 
-Status: agreed boundaries and proposed implementation layout. No runtime or library stack has been installed or proven yet.
+Status: agreed boundaries with a bounded read-only viewer implementation. See [viewer evidence](viewer.md) for selected dependencies, verified runtime behavior and remaining feasibility work. The broader proposed module layout is not an inventory of delivered modules.
 
 ## Repository boundary
 
@@ -31,7 +31,7 @@ docs/
   requirements/        Agreed product behavior
 ```
 
-Only documentation directories exist initially. Create modules as code gives them a reason to exist; do not create placeholder packages solely to match the diagram. Logical modules need not all become independently published packages.
+Currently `packages/engine` owns in-memory document parsing, references, diagnostics and operation inspection; `packages/editor` owns the shared DOM interface. `apps/web` supplies the page and bounded worker, and `apps/desktop` loads the same built assets in sandboxed Electron. The browser file picker is shared by both wrappers. No privileged filesystem bridge is needed for this read-only slice. The remaining modules above do not exist yet. Create modules as code gives them a reason to exist; do not create placeholder packages solely to match the diagram. Logical modules need not all become independently published packages.
 
 ## Dependency direction
 
@@ -43,7 +43,7 @@ The editor renders results and changes configuration; it never implements transf
 
 ## Technology proposal and feasibility gate
 
-The working proposal is TypeScript for shared engine and editor, Electron for desktop and a Node.js-based CLI delivered with its runtime. No frontend framework, package manager, parser, YAML library, validator, test framework or CLI packaging mechanism has been selected.
+The viewer uses TypeScript, npm with a committed lockfile, `yaml` for syntax preservation and parsing, native DOM rendering, esbuild, Node's test runner and Playwright. Electron is the accepted desktop direction; its Linux bundled-runtime experiment has evidence. A complete OpenAPI/JSON Schema validator and a Node.js-based product CLI packaging mechanism have not been selected. See [the bounded adoption decision](viewer.md); this does not close the broader feasibility gate.
 
 The proposal favors one implementation usable in browser and desktop/CLI. The costs include desktop distribution size, regular Electron/Chromium/Node security maintenance and runtime packaging for each supported platform. Native CLI packaging and offline integration distribution must be demonstrated rather than assumed.
 

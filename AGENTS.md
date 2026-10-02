@@ -8,7 +8,7 @@ These files replace reliance on chat history. Preserve accepted requirements unl
 
 ## Current repository state
 
-This is a documentation foundation. No product implementation, package manifests, build scripts, test runner or CI workflow exists. Do not invent commands or report nonexistent tests as passing. The immediate next work is the technical feasibility milestone in ROADMAP.md. Create modules only when they have real responsibilities and code.
+A read-only viewer preview now exists: shared in-memory TypeScript inspection, a browser editor and an Electron wrapper. Verified commands and current evidence are in README.md and docs/architecture/viewer.md. The complete feasibility milestone, transformations, CLI and native acceptance remain open. Do not confuse inspection parity with deterministic transformed output. Create modules only when they have real responsibilities and code.
 
 ## Non-negotiable boundaries
 
@@ -26,7 +26,7 @@ This is a documentation foundation. No product implementation, package manifests
 
 The product's source code and documentation use Apache License 2.0 (`Apache-2.0`), selected by the owner on 2026-10-02. Preserve the unmodified license text in LICENSE, include it in distributions and set the correct SPDX license identifier in package metadata when manifests are introduced. Preserve required third-party notices and check dependency license compatibility. Do not relicense the project without an explicit user decision.
 
-The provisional technology direction is TypeScript for the shared engine and editor, Electron for desktop, and Node.js-based CLI packaging. This is not an implemented or irrevocable choice. Validate browser compatibility, bundled runtime distribution, OpenAPI 3.0/3.1/3.2 support, multi-file references, YAML comment handling and deterministic serialization before committing to libraries. A standalone shared parser project is not in scope.
+TypeScript and `yaml` are adopted for the bounded viewer based on the evidence in docs/architecture/viewer.md; Electron is the owner's accepted desktop direction. Node.js-based CLI packaging remains provisional. Broader transformation, comment movement, bundling and deterministic serialization still require feasibility evidence before extending these choices. A standalone shared parser project is not in scope.
 
 Before adding a dependency, record its purpose, license, maintenance status, browser/runtime compatibility, offline behavior and any network or telemetry behavior. Prefer established libraries when suitable; do not rebuild a parser merely to avoid dependencies. A library must not silently narrow the agreed OpenAPI support. Review transitive dependencies and keep runtime dependencies proportionate. No license decision for this project may be inferred from a library's license.
 
@@ -52,8 +52,9 @@ SonarQube is under consideration and the project should support its analysis and
 
 - On the owner's Windows workstation, run all builds and automated tests exclusively in WSL. Do not fall back to Windows build/test execution. If WSL is unavailable, report the blocker.
 - The owner installed Linux Node.js 24.21.0 (npm 11.19.0), Xvfb and unzip in Ubuntu WSL on 2026-10-02. Node lives at `/mnt/d/devtools/node/node-v24.21.0-linux-x64/bin`. For repeatable non-interactive execution from PowerShell, use `wsl -d Ubuntu --exec env PATH=/mnt/d/devtools/node/node-v24.21.0-linux-x64/bin:/usr/local/bin:/usr/bin:/bin bash -c '<command>'`. This selects Linux tools without inheriting Windows npm. A terminal-only `export PATH` does not persist; verify tool paths and versions in each new environment. If WSL system prerequisites are missing, give the owner installation instructions instead of installing them automatically.
+- Browser binaries are at `/mnt/d/devtools/playwright`; set `PLAYWRIGHT_BROWSERS_PATH` to that location when running browser tests. Electron's download cache is `/mnt/d/devtools/electron-cache`. The owner installed WebKit system prerequisites on 2026-10-02. README.md records the verified build/test/start commands.
 - Native multi-OS acceptance remains required: use appropriate CI runners or separately agreed test environments. WSL success alone is not evidence of native Windows or macOS compatibility. Obtain agreement before introducing a local exception to the WSL rule.
-- Work on ordinary branches by default. On this workstation, any worktree must be on `D:` or `/mnt/d`, never `C:`. Keep project checkouts and heavy development outputs on D where practical.
+- Work on ordinary branches in the shared D: checkout; the owner explicitly ruled out worktrees for this implementation workflow. Coordinate executing chats to avoid concurrent branch changes/writes. Keep project checkouts and heavy development outputs on D where practical.
 - Prefer `codex/` for new implementation branches. Keep history focused; use amend where appropriate for an existing task commit. Do not rewrite another person's commits or force-push shared history without authorization; use a lease when an authorized rewrite is necessary.
 - Before committing, inspect status, the complete relevant diff and whitespace checks. Never stage unrelated changes or secrets.
 - Do not publish packages, purchase services, add telemetry, change product requirements, or choose a legal license as incidental implementation work. Obtain the relevant user decision first. The initial repository creation and documentation publication are authorized.

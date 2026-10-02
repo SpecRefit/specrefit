@@ -1,6 +1,6 @@
 # Roadmap
 
-This roadmap sequences implementation; it does not remove the requirements in [product.md](docs/requirements/product.md). There are no delivery dates or claimed implementation milestones beyond the repository documentation foundation.
+This roadmap sequences implementation; it does not remove the requirements in [product.md](docs/requirements/product.md). A first read-only viewer preview now has evidence; it is not completion of the transformation workflow or a product release.
 
 ## Current state
 
@@ -8,14 +8,21 @@ This roadmap sequences implementation; it does not remove the requirements in [p
 - [x] Record requirements, architecture direction, development instructions and open decisions in the product repository.
 - [x] Select Apache License 2.0 and add its official text to LICENSE.
 - [ ] Validate the proposed technical stack.
-- [ ] Implement product modules, build/test commands and CI.
+- [x] Implement the first shared viewer engine/editor with documented WSL build/test commands.
+- [ ] Complete and verify CI and native OS acceptance.
 - [ ] Deliver a usable product release.
 
 The separate landing page is already published at [specrefit.dev](https://specrefit.dev). It is not an application release.
 
+## First viewer slice — 2026-10-02
+
+The owner authorized read/inspect before transformations. Implemented: local YAML/JSON import, folder structure, grouped/searchable operations, parameters with inheritance, bodies/responses/security, schemas and recursive JSON Pointer references, exact missing-document supply, source inspection and diagnostics. Engine checks cover representative 3.0.4/3.1.2/3.2.0 fixtures. Browser/Node and Electron/Node inspection parity is verified; the Linux development distribution includes its runtime. See [exact evidence and support boundaries](docs/architecture/viewer.md) and [commands](README.md#development-status).
+
+The viewer deliberately reports unimplemented schema scope/anchor and dialect behavior rather than guessing. ZIP import, persisted project mappings, complete validation, transformations, CLI and native acceptance remain open. Next actions: owner review of the viewer PR; broader reference/dialect coverage; native distribution design and clean-machine tests; then the outstanding feasibility experiments below. Review approval remains required and must not be bypassed.
+
 ## 1. Feasibility and foundational decisions
 
-The next development task is a bounded prototype, not a production parser or an empty package tree.
+This milestone remains open. The viewer provides evidence for browser parsing, shared inspection, fixed multi-file references, source retention and an Electron Linux runtime bundle. It does not prove transformation semantics or generated-output determinism.
 
 - Evaluate libraries for all three OpenAPI families, browser compatibility, syntax/comment preservation, licensing, maintenance and offline behavior.
 - Use fixed multi-file fixtures with relative references, recursive schemas, duplicate basenames, unknown extensions and YAML comments.

@@ -30,7 +30,7 @@ On 2026-10-02 the owner authorized a first read-only viewer slice and accepted E
 
 ## Provisional implementation proposals
 
-- TypeScript shared implementation, Electron desktop, Node.js-based CLI with bundled runtime. Validate through feasibility work before treating this as settled.
+- TypeScript and `yaml` are now adopted only for the bounded viewer; Electron is accepted and has a Linux runtime-bundling experiment. The broader transformation representation and Node.js-based CLI distribution remain provisional. See [viewer evidence and limitations](viewer.md).
 - The module layout in [overview.md](overview.md). Refine based on implementation without weakening its dependency boundaries.
 - SonarQube-compatible analysis and coverage reporting. The owner is strongly considering SonarQube; edition, deployment and quality thresholds are not selected.
 - Maven is the first named build integration; .NET and others may follow. No .NET plugin is currently implemented or separately specified.
@@ -38,7 +38,7 @@ On 2026-10-02 the owner authorized a first read-only viewer slice and accepted E
 ## Outstanding decisions
 
 - Contribution guidance and third-party notice handling under the selected Apache License 2.0. The product license itself is decided.
-- Parser, validator, YAML syntax-preserving library, UI framework, package manager, testing tools and supported runtime versions.
+- Full OpenAPI/JSON Schema validator, transformation-time document representation, product CLI packaging and supported production OS/browser versions. The viewer's parser, native DOM editor, npm, test tools and Node 24 development runtime are recorded in [viewer.md](viewer.md).
 - Configuration schema, rule target syntax, collision/conflict policy details, format discovery, diagnostic/report schemas and CLI syntax.
 - Concrete supported OS/browser/CPU versions, runtime packaging, signed artifacts, release process and update verification.
 - Credentials for optional fetching, safe retrieval scope/redirects, resource limits and archive policy.
