@@ -55,3 +55,7 @@ The owner authorized automatic main development downloads under GitHub Releases 
 ## Superseded directions
 
 A separately reusable parser intended to be shared with Fabrikt is no longer a project objective. Requiring a single pre-bundled input to accelerate development was explicitly rejected. External network retrieval was initially outside scope, then accepted as optional explicit input acquisition; it remains outside the engine and cannot require a web processing/proxy server.
+
+## Hosted preview and website (2026-10-02)
+
+The owner requested the playground and development download availability on the website. Publish the tested browser viewer from successful main builds to GitHub Pages at play.specrefit.dev, keeping all contract processing local. Browser checks join the required Build gate. See [publication boundaries](playground.md); stable download channels must be separated before stable releases are introduced.

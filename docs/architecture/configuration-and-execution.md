@@ -24,7 +24,7 @@ A reproducible edit needs a structural target, an expected precondition and an i
 
 Rules execute in stored order. Trace each change to its rule and document location. Do not flag every sequential edit as a conflict; distinguish intentional composition from incompatible requirements. Exact conflict classification remains to be designed and tested.
 
-The first transformation to implement is a preference for JSON where a contract offers it, with explicit targeting and exceptions. The detailed semantics for requests versus responses, media-type variants and ambiguous alternatives need fixtures and design before implementation. Do not silently invent content or claim that a server supports an authentication or media type it does not advertise.
+The first transformation to implement is a media-type preference, with explicit targeting and exceptions. On 2026-10-02 the owner clarified that the user must select one or several offered media types, rather than automatically retaining every JSON variant. For example, choose only `application/json`, or choose it together with `application/problem+json`. Present offered types as selectable choices. The proposed behavior is to retain the selected types present in a targeted request/response and remove other media entries only when at least one selection is present; otherwise leave it unchanged. Exact matching, parameters, shared referenced content and request/response targeting still need fixtures and implementation design. This is agreed selection behavior with a proposed no-match policy, not implemented transformation support. Do not silently invent content or claim that a server supports an authentication or media type it does not advertise.
 
 ## Deterministic output and safe persistence
 
