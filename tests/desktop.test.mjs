@@ -30,5 +30,8 @@ test('portable bundle starts with no Node installation on its PATH', { skip: !pr
     await page.getByRole('button', { name: 'Explore an example' }).click();
     await page.getByRole('heading', { name: 'Find your next companion', exact: true }).waitFor();
     assert.equal(await page.evaluate(() => typeof globalThis.process), 'undefined');
+    const built = JSON.parse(await readFile('dist/web/version.json', 'utf8'));
+    assert.equal(await application.evaluate(({ app }) => app.getVersion()), built.version);
+    assert.equal(await page.locator('.preview').textContent(), built.version);
   } finally { await application.close(); }
 });

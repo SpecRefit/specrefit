@@ -80,13 +80,16 @@ Verified checks (WSL, 2026-10-02):
 ```bash
 npm run check          # TypeScript checks
 npm test               # 30 engine/semantic/security cases
+npm run test:version   # Git-tag and development-version cases
 npm run test:browser   # 21 cases in Chromium, Firefox and WebKit; includes Node parity
 npm run test:desktop   # Electron parity and sandbox checks; package test skipped unless enabled
 npm run package:desktop
 SPECREFIT_TEST_PACKAGE=1 npm run test:desktop
 ```
 
-Pull requests targeting `main` and pushes to `main` run the [Build workflow](.github/workflows/build.yml) on GitHub's Ubuntu 24.04 runner with Node 24.21.0: `npm ci --ignore-scripts`, `npm run check`, `npm test`, then `npm run build`. The `Build` check must succeed on an up-to-date PR before merging, alongside the existing code-owner approval rule. There are no path filters that skip documentation-only PRs. Browser tests, Electron packaging and native multi-OS acceptance remain separate checks; a green build does not establish those results.
+Pull requests targeting `main`, pushes to `main` and pushed `v*` tags run the [Build workflow](.github/workflows/build.yml) on GitHub's Ubuntu 24.04 runner with Node 24.21.0: `npm ci --ignore-scripts`, `npm run check`, `npm test`, `npm run test:version`, then `npm run build`. The `Build` check must succeed on an up-to-date PR before merging, alongside the existing code-owner approval rule. There are no path filters that skip documentation-only PRs. Browser tests, Electron packaging and native multi-OS acceptance remain separate checks; a green build does not establish those results.
+
+Build versions come from Git: a clean `v0.1.0` tag yields `0.1.0`, while untagged/PR builds use `0.0.0-dev+g<commit>` and local changes add `.dirty`. Fetch tags before building. The browser header and packaged desktop use the same generated version; the root manifest's `0.0.0-dev` is only a development placeholder. See [versioning and release channels](docs/architecture/versioning.md) for exact behavior and verification. GitHub Releases and Maven Central are planned publication channels; tag builds currently validate/build only and publish nothing.
 
 `package:desktop` creates a Linux x64 development bundle at `artifacts/specrefit-linux-x64/`, including Electron, application files, Apache-2.0 and third-party notices. Launch its `electron` executable; the package test starts it without Node on PATH. This is a WSL packaging experiment, **not** native Windows/macOS support or clean-machine acceptance. Windows/macOS packages, installers, signing, auto-update design and release distribution remain open.
 
