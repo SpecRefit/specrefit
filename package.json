@@ -14,7 +14,7 @@
     "build": "node scripts/build.mjs",
     "start": "node scripts/serve.mjs",
     "desktop": "electron .",
-    "test": "node --test tests/engine.test.ts tests/transform.test.ts tests/bundle.test.ts",
+    "test": "node --test tests/engine.test.ts tests/transform.test.ts tests/bundle.test.ts tests/export.test.ts tests/export-filesystem.test.mjs",
     "test:version": "node --test tests/version.test.mjs",
     "test:development": "node --test tests/development.test.mjs",
     "archive:development": "node scripts/archive-development.mjs",
@@ -23,6 +23,7 @@
     "package:desktop": "node scripts/package-desktop.mjs"
   },
   "dependencies": {
+    "fflate": "0.8.3",
     "jsonc-parser": "3.3.1",
     "yaml": "2.9.1"
   },

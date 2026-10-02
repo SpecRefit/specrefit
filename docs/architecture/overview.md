@@ -31,7 +31,7 @@ docs/
   requirements/        Agreed product behavior
 ```
 
-Currently `packages/engine` owns in-memory document parsing, references, diagnostics and operation inspection; `packages/editor` owns the shared DOM interface. `apps/web` supplies the page and bounded worker, and `apps/desktop` loads the same built assets in sandboxed Electron. The browser file picker is shared by both wrappers. No privileged filesystem bridge is needed for this read-only slice. The remaining modules above do not exist yet. Create modules as code gives them a reason to exist; do not create placeholder packages solely to match the diagram. Logical modules need not all become independently published packages.
+Currently `packages/engine` owns in-memory document parsing, references, diagnostics, operation inspection, transformations and export planning; `packages/editor` owns the shared DOM interface. `apps/web` supplies the page and bounded worker, and `apps/desktop` loads the same built assets in sandboxed Electron. The browser file picker is shared by both wrappers. Desktop export uses a narrow source-registration and save bridge with native identity checks; see [export boundaries](export.md). The remaining modules above do not exist yet. Create modules as code gives them a reason to exist; do not create placeholder packages solely to match the diagram. Logical modules need not all become independently published packages.
 
 ## Dependency direction
 
@@ -61,4 +61,4 @@ Configuration migrations, update verification, package signing, supported OS/CPU
 
 The first transformation preview now also lives in packages/engine/transform.ts, with the existing worker and editor exposing it. It has no platform I/O. See [exact behavior, conformance evidence and remaining boundaries](transformations.md); no second UI transformation implementation or new dependency was added.
 
-General output bundling lives in packages/engine/bundle.ts and runs after transformations through the same worker. It produces in-memory YAML/JSON and leaves persistence to future platform adapters. See [reference relocation, preservation and limits](bundling.md).
+General output bundling lives in packages/engine/bundle.ts and runs after transformations through the same worker. It produces in-memory YAML/JSON and leaves persistence to platform adapters. See [reference relocation, preservation and limits](bundling.md). Export planning and fixed ZIP packaging live in packages/engine/export.ts; browser downloads and desktop filesystem writes stay outside the engine.

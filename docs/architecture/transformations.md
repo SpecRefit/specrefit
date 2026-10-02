@@ -6,7 +6,7 @@ The owner authorized one PR combining explicit media-type selection and extracti
 
 In an operation's inline request or response, check one or several offered media types and add a selection rule. Open an inline schema with **Explore schema**, accept or edit the proposed model name, and add an extraction rule. Nested schemas and inline parameter schemas are reachable from their detail trees. The **Rules and preview** tab allows reordering/removing rules and selecting error or warning for a missing target. Removing a rule excludes its target from this explicit rule list.
 
-**Preview these rules** runs the same engine through a worker. The result includes per-rule explanations, changed lines and the exact resulting text for every document. Inputs remain unchanged. Rule edits, new files and entry changes invalidate the result; obsolete worker replies are ignored. The version 1 rules JSON can be copied externally and pasted back for replay. This is an experimental rule configuration, not the complete project configuration: entry and reference mappings are supplied separately by the current inspection session. YAML configuration loading, configuration file saving, contract downloads, filesystem persistence, broad-rule exceptions and CLI execution remain future work.
+**Preview these rules** runs the same engine through a worker. The result includes per-rule explanations, changed lines and the exact resulting text for every document. Inputs remain unchanged. Rule edits, new files and entry changes invalidate the result; obsolete worker replies are ignored. The version 1 rules JSON can be copied externally and pasted back for replay. This is an experimental rule configuration, not the complete project configuration: entry and reference mappings are supplied separately by the current inspection session. Reviewed contract files now use the [export workflow](export.md). YAML configuration loading, configuration file saving, broad-rule exceptions and CLI execution remain future work.
 
 ## Engine behavior
 
@@ -22,7 +22,7 @@ All inspection diagnostics currently block transformation, including unsupported
 
 Extraction with discriminator mappings, references pointing into the selected inline schema, and unsupported schema scope is blocked rather than relocating those references incorrectly. Recursive external dependencies can remain unchanged; extraction of a self-referenced inline schema still needs reference relocation work. Automatic duplicate-model merging is not implemented. These restrictions are surfaced in the preview, not silently treated as success.
 
-The input inspection limits still apply. Rule configuration is limited to 128 rules, 100,000 visited values, depth 80 and 4 million string characters; the editor also limits pasted JSON to 4 MB of characters. The worker has a ten-second timeout. These bounds do not establish exhaustive denial-of-service resistance. No source/config file write API exists in this slice; safe filesystem export remains a separate requirement.
+The input inspection limits still apply. Rule configuration is limited to 128 rules, 100,000 visited values, depth 80 and 4 million string characters; the editor also limits pasted JSON to 4 MB of characters. The worker has a ten-second timeout. These bounds do not establish exhaustive denial-of-service resistance. The transformation engine has no filesystem API; the separate [export adapter](export.md) protects imported sources during native saving.
 
 ## General bundling option
 

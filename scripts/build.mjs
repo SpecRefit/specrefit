@@ -9,4 +9,5 @@ for (const file of ['index.html', 'styles.css', 'mark.svg']) await copyFile(`app
 await copyFile('LICENSE', 'dist/web/LICENSE');
 await writeFile('dist/web/version.json', JSON.stringify(version, null, 2) + '\n');
 await writeFile('dist/web/THIRD_PARTY_NOTICES.txt', `SpecRefit includes yaml 2.9.1 (ISC).\n\n${await readFile('node_modules/yaml/LICENSE', 'utf8')}\n\nSpecRefit includes jsonc-parser 3.3.1 (MIT).\n\n${await readFile('node_modules/jsonc-parser/LICENSE.md', 'utf8')}`);
+await writeFile('dist/web/THIRD_PARTY_NOTICES.txt', `\n\nSpecRefit includes fflate 0.8.3 (MIT).\n\n${await readFile('node_modules/fflate/LICENSE', 'utf8')}`, { flag: 'a' });
 console.log(`Built SpecRefit ${version.version}: shared editor and worker in dist/web.`);

@@ -1,6 +1,6 @@
 # External-reference bundling preview
 
-The owner authorized the general bundling output option after the first two transformations. It is implemented in the shared engine and the browser/Electron preview, independently of the rule list. Contract downloads, safe filesystem persistence and CLI execution remain future work.
+The owner authorized the general bundling output option after the first two transformations. It is implemented in the shared engine and the browser/Electron preview, independently of the rule list. Reviewed bundles can now be downloaded or saved through the [export workflow](export.md). CLI execution remains future work.
 
 ## Workflow and configuration
 

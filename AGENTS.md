@@ -8,7 +8,7 @@ These files replace reliance on chat history. Preserve accepted requirements unl
 
 ## Current repository state
 
-An inspection and transformation preview now exists: shared in-memory TypeScript inspection, a browser editor and an Electron wrapper. Verified commands and current evidence are in README.md and docs/architecture/viewer.md. Explicit media selection and inline schema extraction now generate in-memory previews; see docs/architecture/transformations.md. General external-reference bundling now produces one-file previews; see docs/architecture/bundling.md for its limits and tests. Full feasibility, export, project configuration, CLI and native acceptance remain open. Browser/Electron checks cover exact transformed output in this bounded slice. Create modules only when they have real responsibilities and code.
+An inspection, transformation and export preview now exists: shared in-memory TypeScript processing, a browser editor and an Electron wrapper. Verified commands and current evidence are in README.md and docs/architecture/viewer.md. Explicit media selection and inline schema extraction now generate in-memory previews; see docs/architecture/transformations.md. General external-reference bundling produces one-file previews; see docs/architecture/bundling.md for its limits and tests. Reviewed files export through browser downloads and protected native file/directory saves; see docs/architecture/export.md. Full feasibility, project configuration, CLI and native acceptance remain open. Browser/Electron checks cover exact transformed output in this bounded slice. Create modules only when they have real responsibilities and code.
 
 ## Non-negotiable boundaries
 
