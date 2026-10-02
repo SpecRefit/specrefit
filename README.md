@@ -32,7 +32,7 @@ Source documents remain protected. SpecRefit outputs ordinary OpenAPI documents 
 
 - Product: [SpecRefit/specrefit](https://github.com/SpecRefit/specrefit).
 - Website: [SpecRefit/specrefit.github.io](https://github.com/SpecRefit/specrefit.github.io), published at [specrefit.dev](https://specrefit.dev).
-- Planned optional browser editor address: `play.specrefit.dev`; no editor is deployed there yet.
+- Browser playground address: `play.specrefit.dev`; deployment setup and verification are tracked in [playground publication](docs/architecture/playground.md).
 - Intended Maven group: `io.github.specrefit`; publishing infrastructure and artifact coordinates are not set up by this repository.
 
 The website is independently maintained. Product modules belong together in this repository and are intended to be released in coordinated versions.
@@ -62,7 +62,7 @@ Open [the local viewer](http://127.0.0.1:4173). This development server serves s
 
 On wide screens, the operation list and details scroll independently. Selecting an operation keeps your place in the list and opens its details at the top. On narrow screens, selection brings the details into view.
 
-The production browser files are in `dist/web`; they can be served as static assets. No hosted editor has been deployed. Electron opens the same built files locally:
+The production browser files are in `dist/web`; they can be served as static assets. Successful main builds publish those tested files to [the playground](https://play.specrefit.dev), with the [deployment boundaries and acceptance checks](docs/architecture/playground.md). Electron opens the same built files locally:
 
 ```bash
 npm run desktop
@@ -82,11 +82,11 @@ SPECREFIT_TEST_PACKAGE=1 npm run test:desktop
 npm run archive:development # Browser/Linux archives, manifest and checksums
 ```
 
-Pull requests targeting `main`, pushes to `main` and pushed `v*` tags run the [Build workflow](.github/workflows/build.yml) on GitHub's Ubuntu 24.04 runner with Node 24.21.0: `npm ci --ignore-scripts`, `npm run check`, `npm test`, `npm run test:version`, `npm run test:development`, then `npm run build`. PR/main runs also package and test Electron before archiving the development downloads. The `Build` check must succeed on an up-to-date PR before merging, alongside the existing code-owner approval rule. There are no path filters that skip documentation-only PRs. Browser tests and native multi-OS acceptance remain separate checks; a green build does not establish those results.
+Pull requests targeting `main`, pushes to `main` and pushed `v*` tags run the [Build workflow](.github/workflows/build.yml) on GitHub's Ubuntu 24.04 runner with Node 24.21.0: `npm ci --ignore-scripts`, `npm run check`, `npm test`, `npm run test:version`, `npm run test:development`, then `npm run build`. PR/main runs also package and test Electron before archiving the development downloads. The `Build` check must succeed on an up-to-date PR before merging, alongside the existing code-owner approval rule. There are no path filters that skip documentation-only PRs. Chromium, Firefox and WebKit tests also run in the required Build job. Native multi-OS acceptance remains separate; a green build does not establish those results.
 
 Build versions come from Git: a clean `v0.1.0` tag yields `0.1.0`, while untagged/PR builds use `0.0.0-dev+g<commit>` and local changes add `.dirty`. Fetch tags before building. The browser header and packaged desktop use the same generated version; the root manifest's `0.0.0-dev` is only a development placeholder. Main CI explicitly forces the development channel. See [versioning and release channels](docs/architecture/versioning.md) for exact behavior.
 
-Successful main builds automatically publish complete development downloads under [GitHub Releases / latest](https://github.com/SpecRefit/specrefit/releases/latest), starting after the publication workflow is merged. Current downloads are browser assets and an experimental Linux x64 desktop bundle, plus a manifest and checksums. Windows/macOS/CLI/Maven artifacts join only when implemented. These are development builds, not stable releases; GitHub's prerelease flag cannot be combined with Latest. See [development build behavior and verification](docs/architecture/development-builds.md). Stable releases and Maven Central publication remain future work.
+Successful main builds automatically publish complete development downloads under [GitHub Releases / latest](https://github.com/SpecRefit/specrefit/releases/latest), verified by the first successful main publication. Current downloads are browser assets and an experimental Linux x64 desktop bundle, plus a manifest and checksums. Windows/macOS/CLI/Maven artifacts join only when implemented. These are development builds, not stable releases; GitHub's prerelease flag cannot be combined with Latest. See [development build behavior and verification](docs/architecture/development-builds.md). Stable releases and Maven Central publication remain future work.
 
 `package:desktop` creates a Linux x64 development bundle at `artifacts/specrefit-linux-x64/`, including Electron, application files, Apache-2.0 and third-party notices. Launch its `electron` executable; the package test starts it without Node on PATH. This is an experimental Linux package, **not** native Windows/macOS support or clean-machine acceptance. Windows/macOS packages, installers, signing, auto-update design and stable release distribution remain open.
 
