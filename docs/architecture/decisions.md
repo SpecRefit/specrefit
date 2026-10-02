@@ -4,6 +4,8 @@ Baseline recorded 2026-10-02. This register summarizes decisions; the linked req
 
 ## Accepted
 
+On 2026-10-02 the owner authorized a first read-only viewer slice and accepted Electron as the desktop direction. See [viewer scope and evidence](viewer.md) for the exact agreed scope, implementation workflow and dependency evaluation. This sequences delivery without removing editing, transformation, comparison or export requirements. Library adoption remains evidence-driven.
+
 | Decision | Rationale |
 | --- | --- |
 | One product repository, separate existing website repository | Coordinate behavior and versions across product modules without coupling website edits to releases. |
