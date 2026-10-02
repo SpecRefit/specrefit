@@ -24,7 +24,7 @@ A reproducible edit needs a structural target, an expected precondition and an i
 
 Rules execute in stored order. Trace each change to its rule and document location. Do not flag every sequential edit as a conflict; distinguish intentional composition from incompatible requirements. Exact conflict classification remains to be designed and tested.
 
-The first two transformations now preview explicit media-type selection and inline schema extraction. The owner requires selecting one or several advertised media keys, deterministic suggested model names with saved overrides, and idempotent replay. Exact matching and conservative handling of shared references are implemented within the [documented preview boundaries](transformations.md). Complete project configuration, broad-rule exceptions, bundling and export remain open. Do not silently invent content or claim that a server supports an authentication or media type it does not advertise.
+The first two transformations now preview explicit media-type selection and inline schema extraction. The owner requires selecting one or several advertised media keys, deterministic suggested model names with saved overrides, and idempotent replay. Exact matching and conservative handling of shared references are implemented within the [documented preview boundaries](transformations.md). Complete project configuration, broad-rule exceptions and export remain open. General bundling previews are implemented within the [documented boundaries](bundling.md). Do not silently invent content or claim that a server supports an authentication or media type it does not advertise.
 
 ## Deterministic output and safe persistence
 
@@ -32,7 +32,7 @@ For the same engine version, complete logical input set, configuration and outpu
 
 Create the in-memory result once for a given input/configuration state. Preview its actual bytes and change trace; write the reviewed result rather than recomputing with potentially changed inputs. If inputs change, invalidate the preview and recompute.
 
-Multi-file output preserves document organization and source format by default. Explicit format selection may change names and references; detect output name collisions. Bundled output preserves schema semantics and recursive relationships, with internal references as needed. The default bundle format when inputs are mixed remains undecided.
+Multi-file output preserves document organization and source format by default. Explicit format selection may change names and references; detect output name collisions. Bundled output preserves schema semantics and recursive relationships, with internal references as needed. The preview exposes an explicit YAML/JSON bundle choice, initially selecting YAML for comment retention. The selected format is persisted with the rules.
 
 Before writes, verify that no destination aliases an input document or active configuration. Existing non-source outputs may be replaced. Plan and validate the complete output set before persistence, then implement failure-safe replacement appropriate to the platform. Atomic replacement of several files is not universally available; define recovery behavior and do not promise cross-filesystem transactions. Browser export has different persistence mechanisms but the same source-protection and output semantics.
 
@@ -46,4 +46,4 @@ Comparing different engine/configuration versions and storing a general historic
 
 ## Implemented preview rule model
 
-The initial version 1 rule list and exact matching/extraction behavior are documented in [transformations.md](transformations.md). This bounded in-memory preview model is implemented separately from the still-open complete project configuration and CLI syntax. It includes ordered explicit targets, expected values/types, saved extraction names and missing-target policy. Contract-wide external-reference bundling is an agreed output option, not a rule and not yet implemented.
+The initial version 1 rule list and exact matching/extraction behavior are documented in [transformations.md](transformations.md). This bounded in-memory preview model is implemented separately from the still-open complete project configuration and CLI syntax. It includes ordered explicit targets, expected values/types, saved extraction names and missing-target policy. Contract-wide external-reference bundling is implemented as an output option after the rules; see [scope and limitations](bundling.md).

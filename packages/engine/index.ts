@@ -6,7 +6,7 @@ export type ObjectValue = { [key: string]: Value };
 export interface Source { id: string; text: string }
 export interface Location { document: string; pointer: string; line: number; column: number }
 export interface Diagnostic { code: string; severity: 'error' | 'warning'; message: string; location: Location }
-export interface Reference { from: Location; uri: string; target?: Location; missing?: string; schema?: boolean }
+export interface Reference { from: Location; uri: string; target?: Location; missing?: string; schema?: boolean; role?: Role }
 export interface Item { location: Location; value: Value; schema?: boolean }
 export interface Operation {
   location: Location; method: string; path: string; kind: string; tags: string[];
@@ -21,6 +21,7 @@ export interface Inspection {
   references: Reference[]; diagnostics: Diagnostic[];
   locations: Location[];
   schemaLocations: Location[];
+  contexts: { location: Location; role: Role }[];
 }
 export const limits = { files: 64, fileBytes: 20_000_000, totalBytes: 40_000_000, nodes: 1_000_000, depth: 80 };
 export const object = (v: unknown): v is ObjectValue => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -47,12 +48,12 @@ export function canonical(id: string, relativeTo = base): string {
 }
 export function displayId(id: string): string { return id.startsWith(base) ? id.slice(base.length) : id; }
 
-type Role = 'root' | 'path' | 'operation' | 'parameter' | 'body' | 'response' | 'media' | 'schema' | 'callback' | 'example' | 'header' | 'security' | 'link';
+type Role = 'root' | 'path' | 'operation' | 'parameter' | 'body' | 'response' | 'media' | 'schema' | 'callback' | 'example' | 'header' | 'security' | 'link' | 'encoding';
 interface Parsed { source: Source; value?: Value; ast?: ReturnType<typeof parseDocument>; lines: LineCounter; positions?: Map<string, { line: number; column: number }> }
 
 /** Pure in-memory inspection. No filesystem, network, browser or Electron APIs. */
 export function inspect(input: unknown): Inspection {
-  const result: Inspection = { entry: '', version: '', title: 'Contract', description: '', documents: [], operations: [], schemas: [], references: [], diagnostics: [], locations: [], schemaLocations: [] };
+  const result: Inspection = { entry: '', version: '', title: 'Contract', description: '', documents: [], operations: [], schemas: [], references: [], diagnostics: [], locations: [], schemaLocations: [], contexts: [] };
   const docs = new Map<string, Parsed>();
   function location(document: string, pointer = ''): Location {
     const d = docs.get(document);
@@ -193,6 +194,7 @@ export function inspect(input: unknown): Inspection {
     if (visited.has(visitKey)) return; visited.add(visitKey);
     if (depth > limits.depth || visited.size > limits.nodes) { diagnostic('LIMIT', 'Reference traversal reached its safety limit. Inspection is partial.', loc.document, loc.pointer); return; }
     result.locations.push(loc);
+    result.contexts.push({ location: loc, role });
     if (role === 'schema') result.schemaLocations.push(loc);
     const v = get(loc);
     if (role === 'schema' && typeof v === 'boolean') {
@@ -229,13 +231,14 @@ export function inspect(input: unknown): Inspection {
       if (family === '0' && (Array.isArray(v.type) || own(v, '$defs'))) diagnostic('SCHEMA_VERSION', 'This JSON Schema construct is not supported by the OpenAPI 3.0 schema dialect.', loc.document, loc.pointer);
     }
     if (own(v, '$ref')) {
-      if (role === 'operation' || role === 'media' && family !== '2') {
+      if (role === 'operation' || role === 'encoding' || role === 'media' && family !== '2') {
         diagnostic('REFERENCE_CONTEXT', `$ref is not supported in this ${role} position for OpenAPI ${result.version}. The original fields remain available.`, loc.document, child(loc.pointer, '$ref')); return;
       }
       if (typeof v.$ref !== 'string') diagnostic('REFERENCE_TYPE', '$ref must be a string.', loc.document, child(loc.pointer, '$ref'));
       else if (!uncertainBase) {
         const edge = resolve(at('$ref'), v.$ref);
         edge.schema = role === 'schema';
+        edge.role = role;
         if (edge.target) scan(edge.target, role, depth + 1);
       } else diagnostic('SCHEMA_BASE', 'This reference is not resolved because an enclosing $id changes its base URI.', loc.document, child(loc.pointer, '$ref'), 'warning');
       if (role !== 'schema' && role !== 'path' || role === 'schema' && family === '0') return;
@@ -260,7 +263,16 @@ export function inspect(input: unknown): Inspection {
       case 'operation': array('parameters', 'parameter'); field('requestBody', 'body'); map('responses', 'response'); map('callbacks', 'callback'); break;
       case 'body': case 'response': map('content', 'media'); if (role === 'response') { map('headers', 'header'); map('links', 'link'); } break;
       case 'parameter': case 'header': field('schema', 'schema'); map('content', 'media'); map('examples', 'example'); break;
-      case 'media': field('schema', 'schema'); field('itemSchema', 'schema'); map('examples', 'example'); break;
+      case 'media':
+        field('schema', 'schema'); field('itemSchema', 'schema'); map('examples', 'example'); map('encoding', 'encoding');
+        if (family === '2') { field('itemEncoding', 'encoding'); array('prefixEncoding', 'encoding'); }
+        else for (const name of ['itemEncoding', 'prefixEncoding']) if (own(v, name)) diagnostic('VERSION_FIELD', `${name} requires OpenAPI 3.2.`, loc.document, child(loc.pointer, name));
+        break;
+      case 'encoding':
+        map('headers', 'header');
+        if (family === '2') { map('encoding', 'encoding'); field('itemEncoding', 'encoding'); array('prefixEncoding', 'encoding'); }
+        else for (const name of ['encoding', 'itemEncoding', 'prefixEncoding']) if (own(v, name)) diagnostic('VERSION_FIELD', `${name} requires OpenAPI 3.2.`, loc.document, child(loc.pointer, name));
+        break;
       case 'schema':
         for (const name of ['properties', 'patternProperties', '$defs', 'definitions', 'dependentSchemas']) map(name, 'schema');
         for (const name of ['items', 'additionalProperties', 'unevaluatedProperties', 'unevaluatedItems', 'contains', 'not', 'if', 'then', 'else', 'propertyNames', 'contentSchema']) field(name, 'schema');

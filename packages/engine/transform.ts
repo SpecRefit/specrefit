@@ -1,12 +1,13 @@
 import { isMap, isScalar, parseDocument } from 'yaml';
 import { canonical, child, inspect, object, valueAt, type Operation, type Source, type Value } from './index.ts';
+import { bundle, type Output } from './bundle.ts';
 
 export interface Target { document: string; pointer: string }
 interface BaseRule { id: string; target: Target; onMissing: 'error' | 'warning' }
 export interface MediaRule extends BaseRule { kind: 'select-media'; keep: string[]; expectedTypes: string[] }
 export interface ExtractRule extends BaseRule { kind: 'extract-schema'; name: string; expected: Value }
 export type Rule = MediaRule | ExtractRule;
-export interface Configuration { version: 1; rules: Rule[] }
+export interface Configuration { version: 1; rules: Rule[]; output?: Output }
 export interface Change { rule: string; status: 'changed' | 'already-applied' | 'unchanged' | 'warning' | 'error'; message: string; target: Target }
 export interface Preview { files: Source[]; changes: Change[]; diagnostics: string[]; configuration?: Configuration }
 const tokens = (pointer: string) => pointer.slice(1).split('/').map(s => s.replace(/~1/g, '/').replace(/~0/g, '~'));
@@ -27,7 +28,8 @@ export function suggestSchemaName(op: Operation, pointer: string): string {
   return ((/^[A-Za-z]/.test(base) ? '' : 'Model') + base + suffix + nested.join('')).slice(0, 120);
 }
 function validate(config: unknown): config is Configuration {
-  if (!object(config) || config.version !== 1 || !Array.isArray(config.rules) || config.rules.length > 128 || Object.keys(config).some(k => !['version', 'rules'].includes(k))) return false;
+  if (!object(config) || config.version !== 1 || !Array.isArray(config.rules) || config.rules.length > 128 || Object.keys(config).some(k => !['version', 'rules', 'output'].includes(k))) return false;
+  if (config.output !== undefined && (!object(config.output) || typeof config.output.bundle !== 'boolean' || typeof config.output.format !== 'string' || !['yaml', 'json'].includes(config.output.format) || Object.keys(config.output).some(k => !['bundle', 'format'].includes(k)))) return false;
   const ids = new Set<string>();
   return config.rules.every(r => {
     if (!object(r) || typeof r.id !== 'string' || !r.id || r.id.length > 160 || ids.has(r.id) || !object(r.target) ||
@@ -50,7 +52,7 @@ export function transform(input: unknown, config: unknown): Preview {
   const bounded = (v: unknown, depth = 0): boolean => ++count <= 100_000 && depth <= 80 &&
     (v === null || typeof v === 'string' && (characters += v.length) <= 4_000_000 || typeof v === 'boolean' || typeof v === 'number' && Number.isFinite(v) ||
      typeof v === 'object' && Object.values(v as object).every(x => bounded(x, depth + 1)));
-  if (!bounded(config) || !validate(config)) { result.diagnostics.push('Invalid version 1 transformation configuration. Check rules, targets, preconditions and limits.'); return result; }
+  if (!bounded(config) || !validate(config)) { result.diagnostics.push('Invalid version 1 transformation configuration. Check rules, targets, preconditions, output settings and limits.'); return result; }
   result.configuration = structuredClone(config);
   let report = inspect(input);
   if (report.diagnostics.length) { result.diagnostics.push('Resolve inspection diagnostics before transformation. Unsupported reference scope or incomplete inputs cannot produce a trustworthy preview.'); return result; }
@@ -142,5 +144,12 @@ export function transform(input: unknown, config: unknown): Preview {
   }
   if (result.diagnostics.length || result.changes.some(c => c.status === 'error')) return result;
   result.files = sources();
+  if (config.output?.bundle) {
+    const bundled = bundle(inspect({ entry: report.entry, sources: result.files }), config.output.format);
+    result.files = bundled.files; result.diagnostics.push(...bundled.diagnostics);
+    const target = { document: report.entry, pointer: '' };
+    for (const message of bundled.warnings) result.changes.push({ rule: 'output', status: 'warning', message, target });
+    if (bundled.files.length) result.changes.push({ rule: 'output', status: 'changed', message: 'Bundle external references into one file; recursive relationships remain internal references.', target });
+  }
   return result;
 }

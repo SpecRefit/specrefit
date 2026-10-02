@@ -60,3 +60,5 @@ Optional retrieval needs explicit allowed locations, redirect and credential-han
 Configuration migrations, update verification, package signing, supported OS/CPU versions and release artifact integrity need designs before releases. SonarQube, dependency/license review, secret checks and behavioral security tests should complement one another. A GitHub Actions PR build gate runs type checks, engine tests and the viewer build; broader CI coverage and those services remain open.
 
 The first transformation preview now also lives in packages/engine/transform.ts, with the existing worker and editor exposing it. It has no platform I/O. See [exact behavior, conformance evidence and remaining boundaries](transformations.md); no second UI transformation implementation or new dependency was added.
+
+General output bundling lives in packages/engine/bundle.ts and runs after transformations through the same worker. It produces in-memory YAML/JSON and leaves persistence to future platform adapters. See [reference relocation, preservation and limits](bundling.md).

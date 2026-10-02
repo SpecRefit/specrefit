@@ -1,0 +1,35 @@
+import { test, expect } from '@playwright/test';
+
+test('system light and dark themes apply on startup and change without reloading', async ({ page }, info) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(17, 27, 38)');
+  await expect(page.locator('.app-header')).toHaveCSS('background-color', 'rgb(24, 37, 49)');
+  await page.getByRole('button', { name: 'Explore an example' }).click();
+  await expect(page.locator('.sidebar')).toHaveCSS('background-color', 'rgb(21, 33, 45)');
+  await page.getByRole('button', { name: 'Rules and preview', exact: true }).click();
+  await expect(page.locator('textarea')).toHaveCSS('background-color', 'rgb(24, 37, 49)');
+  await page.getByRole('checkbox', {name:'Bundle external references into one file'}).check();
+  await page.getByRole('button', {name:'Preview these rules'}).click();
+  await expect(page.locator('.preview-result summary')).toHaveCount(1);
+  await page.locator('.preview-result summary').click();
+  await page.screenshot({path:`artifacts/${info.project.name}-dark.png`,fullPage:true});
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(250, 252, 253)');
+  await expect(page.locator('textarea')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(page.locator('.preview-result summary')).toHaveCount(1);
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(17, 27, 38)');
+  await page.getByRole('button', {name:'Switch to light theme'}).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(250, 252, 253)');
+  await expect(page.locator('.preview-result summary')).toHaveCount(1);
+  await page.getByRole('button', {name:'Switch to dark theme'}).click();
+  await page.emulateMedia({colorScheme:'light'});
+  await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(17, 27, 38)');
+  await page.reload();
+  await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(250, 252, 253)');
+  await page.setViewportSize({width:390,height:844});
+  await expect(page.getByRole('button', {name:'Switch to dark theme'})).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+});

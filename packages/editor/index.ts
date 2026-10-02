@@ -1,5 +1,6 @@
 import { canonical, child, displayId, limits, object, string, valueAt, type Inspection, type Item, type Location, type Operation, type Source, type Value } from '../engine/index.ts';
 import { suggestSchemaName, type Rule, type Preview } from '../engine/transform.ts';
+import type { Output } from '../engine/bundle.ts';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', cls = ''): HTMLElementTagNameMap[K] => {
   const node = document.createElement(tag); node.textContent = text; if (cls) node.className = cls; return node;
@@ -13,6 +14,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
   let sources: Source[] = [], entry = '', report: Inspection | undefined;
   let view: 'operations' | 'schemas' | 'files' | 'diagnostics' | 'refit' = 'operations';
   let rules: Rule[] = [], preview: Preview | undefined;
+  let outputSettings: Output = { bundle: false, format: 'yaml' };
   let configDraft: string | undefined;
   let ruleSequence = 0;
   let selected = 0, search = '', method = '', activeTag = '';
@@ -260,7 +262,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
       clearTimeout(timer); current.terminate(); if (run !== generation) return;
       if (event.data.error) { fail(event.data.error); return; }
       preview = event.data.preview;
-      if (preview?.configuration) { rules = preview.configuration.rules; configDraft = undefined; }
+      if (preview?.configuration) { rules = preview.configuration.rules; outputSettings = preview.configuration.output ?? { bundle: false, format: 'yaml' }; configDraft = undefined; }
       view = 'refit'; render(); focusPane(); announce('Transformation preview ready. Original files are unchanged.');
     };
     current.onerror = () => { clearTimeout(timer); current.terminate(); if (run === generation) fail('Transformation worker failed. No output is available.'); };
@@ -268,7 +270,25 @@ export function mount(host: HTMLElement, sample: Source[]) {
     showRefit();
   }
   function showRefit() {
-    pane.replaceChildren(el('p', 'REPRODUCIBLE CHANGES', 'eyebrow'), el('h1', 'Rules and preview'), el('p', 'Rules run in the listed order on the original files. Remove a rule to exclude that target. Preview only: contract export and bundling are not available yet.', 'description'));
+    pane.replaceChildren(el('p', 'REPRODUCIBLE CHANGES', 'eyebrow'), el('h1', 'Rules and preview'), el('p', 'Rules run in the listed order on the original files. Bundling runs afterwards and also works without rules. Preview only: file export is not available yet.', 'description'));
+    const settings = el('fieldset', '', 'refit-controls'); settings.append(el('legend', 'Output'));
+    const bundled = el('input'); bundled.type = 'checkbox'; bundled.checked = outputSettings.bundle;
+    const format = el('select'); format.disabled = !outputSettings.bundle;
+    for (const value of ['yaml', 'json'] as const) { const option = el('option', value.toUpperCase()); option.value = value; option.selected = outputSettings.format === value; format.append(option); }
+    const updateOutput = () => {
+      // Preserve a pasted rule list when changing a visual output setting.
+      if (configDraft !== undefined) {
+        try {
+          const draft: unknown = JSON.parse(configDraft);
+          if (!object(draft)) throw new Error();
+          draft.output = { bundle: bundled.checked, format: format.value }; configDraft = JSON.stringify(draft, null, 2);
+        } catch { fail('Correct the rules JSON before changing output settings.'); bundled.checked = outputSettings.bundle; format.value = outputSettings.format; return; }
+      }
+      outputSettings = { bundle: bundled.checked, format: format.value as Output['format'] };
+      preview = undefined; worker?.terminate(); generation++; showRefit();
+    };
+    bundled.addEventListener('change', updateOutput); format.addEventListener('change', updateOutput);
+    settings.append(label('Bundle external references into one file', bundled), label('Bundle format', format), el('p', 'Supply all referenced files first. Recursive models keep internal links. Your originals stay unchanged.', 'muted')); pane.append(settings);
     rules.forEach((rule, i) => {
       const card = el('article', '', 'definition-card');
       card.append(el('h2', `${i + 1}. ${rule.kind === 'select-media' ? 'Keep ' + rule.keep.join(', ') : 'Extract ' + rule.name}`), el('p', `${displayId(rule.target.document)} · ${rule.target.pointer}`));
@@ -281,7 +301,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
       card.append(up, down, button('Remove rule', () => edit(() => { rules.splice(i, 1); })), label('Missing target', missing)); pane.append(card);
     });
     if (!rules.length) pane.append(el('p', 'Add media selection rules from a request or response, or explore an inline schema to extract a shared model.', 'notice'));
-    const config = el('textarea'); config.rows = 8; config.spellcheck = false; config.value = configDraft ?? JSON.stringify({ version: 1, rules }, null, 2);
+    const config = el('textarea'); config.rows = 8; config.spellcheck = false; config.value = configDraft ?? JSON.stringify({ version: 1, rules, output: outputSettings }, null, 2);
     config.addEventListener('input', () => { configDraft = config.value; preview = undefined; worker?.terminate(); generation++; pane.querySelector('.preview-result')?.remove(); });
     pane.append(label('Rules JSON (copy to save, paste to replay)', config), button('Preview these rules', () => {
       try {
@@ -295,7 +315,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
     for (const message of preview.diagnostics) output.append(el('p', message, 'warning'));
     for (const change of preview.changes) output.append(el('p', `${change.rule} · ${change.status}: ${change.message}`, change.status === 'error' || change.status === 'warning' ? 'warning' : 'notice'));
     for (const file of preview.files) {
-      const original = sources.find(s => canonical(s.id) === file.id)?.text ?? '';
+      const original = sources.find(s => canonical(s.id) === (preview?.configuration?.output?.bundle ? report!.entry : file.id))?.text ?? '';
       const details = el('details'); details.append(el('summary', `${displayId(file.id)} · ${file.text === original ? 'unchanged' : 'changed'}`));
       if (file.text !== original) {
         const before = original.split('\n'), after = file.text.split('\n');
@@ -338,7 +358,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
       main.append(guide); host.append(main); return;
     }
     const toolbar = el('div', '', 'toolbar'); const title = el('div'); title.append(el('strong', report.title), el('span', `OpenAPI ${report.version || 'unknown'} · ${sources.length} files`, 'muted'));
-    const actions = el('div', '', 'actions'); actions.append(picker('Add files'), picker('Add folder', true), button('New project', () => { worker?.terminate(); generation++; clearFeedback(); sources = []; entry = ''; report = undefined; rules = []; preview = undefined; configDraft = undefined; ruleSequence = 0; search = ''; method = ''; activeTag = ''; view = 'operations'; render(); announce('Ready to open a new project.'); })); toolbar.append(title, actions); host.append(toolbar);
+    const actions = el('div', '', 'actions'); actions.append(picker('Add files'), picker('Add folder', true), button('New project', () => { worker?.terminate(); generation++; clearFeedback(); sources = []; entry = ''; report = undefined; rules = []; outputSettings = { bundle: false, format: 'yaml' }; preview = undefined; configDraft = undefined; ruleSequence = 0; search = ''; method = ''; activeTag = ''; view = 'operations'; render(); announce('Ready to open a new project.'); })); toolbar.append(title, actions); host.append(toolbar);
     const tabs = el('nav', '', 'tabs'); tabs.setAttribute('aria-label', 'Contract views');
     for (const [id, title] of [['operations', 'Operations'], ['schemas', 'Schemas'], ['files', 'Files'], ['refit', 'Rules and preview'], ['diagnostics', `Diagnostics${report.diagnostics.length ? ` (${report.diagnostics.length})` : ''}`]] as const) {
       const b = button(title, () => { view = id; history.length = 0; render(); focusPane(); }); if (id === view) b.setAttribute('aria-current', 'page'); tabs.append(b);

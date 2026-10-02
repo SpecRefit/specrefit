@@ -64,7 +64,7 @@ npm start
 
 Open [the local viewer](http://127.0.0.1:4173). This development server serves static application assets on loopback; it has no contract upload, processing or proxy endpoint. Choose **Explore an example**, **Open contract files**, or **Open a folder**. Folder selection preserves relative paths. Select the correct **Entry document** if needed. **Diagnostics** offers a file picker for each missing document, assigning the supplied file to the exact requested URI. Mappings are session-only in this preview. Closing/reloading discards the session; originals are never modified.
 
-On wide screens, the operation list and details scroll independently. Selecting an operation keeps your place in the list and opens its details at the top. On narrow screens, selection brings the details into view.
+The **Theme ◐** button switches between light and dark, matching the website. On opening, the editor follows your system preference and continues following changes until you switch manually. Reloading returns to the system preference. On wide screens, the operation list and details scroll independently. Selecting an operation keeps your place in the list and opens its details at the top. On narrow screens, selection brings the details into view.
 
 The production browser files are in `dist/web`; they can be served as static assets. Successful main builds publish those tested files to [the playground](https://play.specrefit.dev), with the [deployment boundaries and acceptance checks](docs/architecture/playground.md). Electron opens the same built files locally:
 
@@ -98,7 +98,7 @@ Transformation previews now generate in-memory contract output. Cross-runtime ch
 
 ### Preview transformations
 
-Choose media types in an operation's request or response and add a selection rule. Open an inline schema to extract a shared model with a suggested, editable name. In **Rules and preview**, reorder or remove rules and run **Preview these rules** to review the changes and exact resulting files. Copy the rules JSON to save it externally; paste it back to replay against the same logical input locations. Originals are never written. Contract export and bundling remain planned.
+Choose media types in an operation's request or response and add a selection rule. Open an inline schema to extract a shared model with a suggested, editable name. In **Rules and preview**, reorder or remove rules and run **Preview these rules** to review the changes and exact resulting files. Copy the rules JSON to save it externally; paste it back to replay against the same logical input locations. Originals are never written. Under **Output**, enable **Bundle external references into one file** and choose YAML or JSON. This also works without transformation rules. See [bundling behavior and boundaries](docs/architecture/bundling.md). Contract export remains planned.
 
 ## Built in collaboration with ChatGPT Codex
 

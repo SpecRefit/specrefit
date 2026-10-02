@@ -73,6 +73,8 @@ The owner authorized an initial read-only viewer on 2026-10-02: grouped/searchab
 
 Safety, useful diagnostics, maintainability and usable workflows are product requirements. Shared code alone is not proof of parity: compare actual outputs across runtimes. Verify distributions on clean supported operating systems without developer tools. Include keyboard accessibility and meaningful errors in UI acceptance.
 
+The editor follows the system light/dark appearance preference on opening, including changes until the user switches manually (owner request, 2026-10-02). Match the website's simple Theme ◐ light/dark toggle rather than a three-way selection menu. The manual choice lasts for the current page session; reopening follows the system again. Controls, diagnostics and contract previews must remain readable in both themes.
+
 The first end-to-end implementation scenario is inspecting a multi-file contract, preferring JSON where offered, previewing changes, saving configuration and exporting or repeating through the CLI. This is development sequencing, not permission to remove other agreed requirements. Authentication preference transformations, model merging and reference cleanup were exploratory ideas; they need separate semantic design before becoming transformation commitments. Listing security requirements for inspection is within scope.
 
 ## Explicit media selection and schema extraction (2026-10-02)
