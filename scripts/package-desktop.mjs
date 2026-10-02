@@ -24,6 +24,7 @@ const packages = await packager({
   electronVersion: pkg.devDependencies.electron, out: output, tmpdir: temporary, overwrite: true,
   asar: false, prune: false, appBundleId: 'dev.specrefit.desktop', appCategoryType: 'public.app-category.developer-tools',
   appCopyright: 'Copyright 2026 SpecRefit contributors', appVersion: nativeVersion(version.version), buildVersion: nativeVersion(version.version),
+  win32metadata: { CompanyName: 'SpecRefit contributors', FileDescription: 'SpecRefit OpenAPI workspace' },
   darwinDarkModeSupport: true, extendInfo: { SpecRefitVersion: version.version },
   afterInitialize: [async ({ buildPath }) => {
     const manifestPath = join(buildPath, 'package.json');
