@@ -24,6 +24,8 @@ This is a documentation foundation. No product implementation, package manifests
 
 ## Architecture and dependency choices
 
+The product's source code and documentation use Apache License 2.0 (`Apache-2.0`), selected by the owner on 2026-10-02. Preserve the unmodified license text in LICENSE, include it in distributions and set the correct SPDX license identifier in package metadata when manifests are introduced. Preserve required third-party notices and check dependency license compatibility. Do not relicense the project without an explicit user decision.
+
 The provisional technology direction is TypeScript for the shared engine and editor, Electron for desktop, and Node.js-based CLI packaging. This is not an implemented or irrevocable choice. Validate browser compatibility, bundled runtime distribution, OpenAPI 3.0/3.1/3.2 support, multi-file references, YAML comment handling and deterministic serialization before committing to libraries. A standalone shared parser project is not in scope.
 
 Before adding a dependency, record its purpose, license, maintenance status, browser/runtime compatibility, offline behavior and any network or telemetry behavior. Prefer established libraries when suitable; do not rebuild a parser merely to avoid dependencies. A library must not silently narrow the agreed OpenAPI support. Review transitive dependencies and keep runtime dependencies proportionate. No license decision for this project may be inferred from a library's license.

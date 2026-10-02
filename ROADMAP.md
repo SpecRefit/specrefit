@@ -6,6 +6,7 @@ This roadmap sequences implementation; it does not remove the requirements in [p
 
 - [x] Agree product scope, reproducibility constraints and repository boundaries.
 - [x] Record requirements, architecture direction, development instructions and open decisions in the product repository.
+- [x] Select Apache License 2.0 and add its official text to LICENSE.
 - [ ] Validate the proposed technical stack.
 - [ ] Implement product modules, build/test commands and CI.
 - [ ] Deliver a usable product release.
@@ -22,7 +23,7 @@ The next development task is a bounded prototype, not a production parser or an 
 - Run the same implementation in a real browser and CLI; compare exact output file paths and bytes for identical inputs. Exercise both JSON and YAML serialization.
 - Verify the feasibility of distributing a CLI with its runtime and using that distribution from a thin Maven integration without a separately installed Node.js runtime.
 - Record evidence, gaps and the selected stack in an architectural decision. Discuss any material architecture change rather than quietly weakening requirements.
-- Resolve the project license before distributing reusable releases or inviting contributions under assumed terms.
+- Define contribution guidance consistent with the selected Apache License 2.0 and review third-party license/notice requirements before releases.
 
 Acceptance: documented runnable commands, reviewed fixtures, demonstrated cross-runtime equality, explicit findings on comment preservation and reference handling, and a defensible library/runtime choice. Do not label the full product supported on the basis of this prototype alone.
 

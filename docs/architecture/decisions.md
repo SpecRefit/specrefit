@@ -7,6 +7,7 @@ Baseline recorded 2026-10-02. This register summarizes decisions; the linked req
 | Decision | Rationale |
 | --- | --- |
 | One product repository, separate existing website repository | Coordinate behavior and versions across product modules without coupling website edits to releases. |
+| Apache License 2.0 for product source code and documentation (2026-10-02) | The owner accepts commercial and closed-source derivatives under the license conditions; explicit patent provisions support broad reuse. See [LICENSE](../../LICENSE). |
 | Independent product, no shared parser project or Fabrikt changes | Adapt ordinary OpenAPI input for any downstream consumer. |
 | One shared processing implementation | Same version and complete inputs must yield byte-identical outputs through all interfaces. |
 | Browser, desktop, CLI and thin build integrations | Equivalent processing with platform-appropriate input mechanisms. |
@@ -34,7 +35,7 @@ Baseline recorded 2026-10-02. This register summarizes decisions; the linked req
 
 ## Outstanding decisions
 
-- Project license and contribution policy. Public hosting is authorized, but no license choice is authorized by that alone.
+- Contribution guidance and third-party notice handling under the selected Apache License 2.0. The product license itself is decided.
 - Parser, validator, YAML syntax-preserving library, UI framework, package manager, testing tools and supported runtime versions.
 - Configuration schema, rule target syntax, collision/conflict policy details, format discovery, diagnostic/report schemas and CLI syntax.
 - Concrete supported OS/browser/CPU versions, runtime packaging, signed artifacts, release process and update verification.

@@ -40,4 +40,8 @@ The website is independently maintained. Product modules belong together in this
 
 There are no build, test or installation commands yet. Do not infer working commands or install a toolchain from this README. The next task is the bounded technical feasibility work in [ROADMAP.md](ROADMAP.md), followed by a tested implementation skeleton. Update this section with verified commands when that skeleton exists.
 
-No project license has been selected yet. Public repository visibility does not grant an open-source license. Resolve this before distributing releases or presenting the project as licensed open source.
+## License
+
+Copyright 2026 SpecRefit contributors.
+
+SpecRefit source code and documentation are licensed under the [Apache License, Version 2.0](LICENSE) (`Apache-2.0`). See the license for its permissions, conditions and warranty disclaimer. Third-party components retain their own licenses and required notices.
