@@ -16,11 +16,13 @@ export function buildVersion({ cwd = process.cwd(), env = process.env } = {}) {
     tags = git('tag', '--points-at', 'HEAD').split('\n').filter(Boolean);
   } catch { throw new Error('Versioning requires the root of a Git checkout with a commit and fetched tags. Build from a clone, not a source archive.'); }
   let tag = null;
-  if (env.GITHUB_REF_TYPE === 'tag') {
+  const development = env.SPECREFIT_BUILD_CHANNEL === 'development';
+  if (env.SPECREFIT_BUILD_CHANNEL && !development) throw new Error('Unknown SPECREFIT_BUILD_CHANNEL; expected development or unset.');
+  if (!development && env.GITHUB_REF_TYPE === 'tag') {
     tag = env.GITHUB_REF_NAME;
     if (!tag || !releaseTag.test(tag) || !tags.includes(tag)) throw new Error('The release tag must be valid vMAJOR.MINOR.PATCH SemVer and point at the checked-out commit.');
     if (dirty) throw new Error('A release tag build requires a clean checkout.');
-  } else if (!env.GITHUB_EVENT_NAME?.startsWith('pull_request')) {
+  } else if (!development && !env.GITHUB_EVENT_NAME?.startsWith('pull_request')) {
     const candidates = tags.filter(t => releaseTag.test(t));
     if (candidates.length > 1) throw new Error('Multiple release tags point at HEAD; select a single release in a tag build.');
     if (!dirty) tag = candidates[0] ?? null;

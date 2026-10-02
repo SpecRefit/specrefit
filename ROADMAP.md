@@ -12,6 +12,7 @@ This roadmap sequences implementation; it does not remove the requirements in [p
 - [x] Derive coordinated browser/desktop build versions from SemVer Git tags, with commit-based development labels and tag-build validation. See [versioning](docs/architecture/versioning.md). Release publication remains open.
 - [x] Verify the mandatory GitHub Actions PR build gate (type checks, engine tests and viewer build); [first successful run](https://github.com/SpecRefit/specrefit/actions/runs/37057588856). The active main ruleset requires the GitHub Actions `Build` check on an up-to-date branch and retains code-owner approval.
 - [ ] Complete and verify CI and native OS acceptance.
+- [ ] Verify the first automatic main development publication after merging its workflow; browser/Linux artifacts, complete-upload checks and publication tests are implemented. Native Windows/macOS/CLI/Maven packages remain future work.
 - [ ] Deliver a usable product release.
 
 The separate landing page is already published at [specrefit.dev](https://specrefit.dev). It is not an application release.

@@ -11,6 +11,7 @@ artifacts/
 test-results/
 playwright-report/
 .cache/
+DEVELOPMENT.local.md
 
 # Credentials and machine-local environment settings must not be committed.
 .env

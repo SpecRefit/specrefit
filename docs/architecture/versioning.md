@@ -1,6 +1,6 @@
 # Build versions and release channels
 
-Accepted direction, 2026-10-02: a Git tag is the source of the release version. Browser, desktop and the future CLI use the same product version. Planned distribution channels are GitHub Releases for desktop/CLI downloads and Maven Central for the future Maven integration. Publishing, signing and registry credentials are not implemented by the versioning change.
+Accepted direction, 2026-10-02: a Git tag is the source of the release version. Browser, desktop and the future CLI use the same product version. GitHub Releases carries development downloads from main; Maven Central remains the planned channel for the future Maven integration. Stable publication, signing and registry credentials remain future work. See [development builds](development-builds.md) for the owner's subsequently authorized automatic publication.
 
 ## Implemented version derivation
 
@@ -14,7 +14,7 @@ The root `package.json` and lockfile retain `0.0.0-dev` as a development placeho
 
 ## Tag validation and future publication
 
-The Build workflow runs for PRs to `main`, pushes to `main` and pushed `v*` tags. It fetches full history/tags, performs a clean locked dependency installation, type checks, engine tests, versioning tests and the viewer build. Invalid release tags fail the build. The job has no release-upload or package-publishing permission and does not publish a GitHub Release or Maven artifact.
+The Build workflow runs for PRs to `main`, pushes to `main` and pushed `v*` tags. It fetches full history/tags and performs the documented checks. Invalid release tags fail the build. Main builds explicitly select the development channel, ignoring stable tags for version derivation, and a separate main-only job publishes verified development downloads. The build job remains read-only. SemVer tag builds and PRs do not publish releases; Maven publication is not implemented.
 
 When distributable packages are ready, the intended release process is: merge a reviewed PR, choose the SemVer release number, create an annotated tag on the intended clean `main` commit, then run the tag's checks and build the matching packages. A future publication workflow can attach verified desktop/CLI artifacts to GitHub Releases. Maven Central publication will need its own namespace, authentication/signing and version-mapping design when the Maven integration exists. Do not infer that a successful tag build proves native platform acceptance or authorizes automatic publication today.
 

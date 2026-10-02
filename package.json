@@ -16,6 +16,8 @@
     "desktop": "electron .",
     "test": "node --test tests/engine.test.ts",
     "test:version": "node --test tests/version.test.mjs",
+    "test:development": "node --test tests/development.test.mjs",
+    "archive:development": "node scripts/archive-development.mjs",
     "test:browser": "playwright test",
     "test:desktop": "xvfb-run -a node --test tests/desktop.test.mjs",
     "package:desktop": "node scripts/package-desktop.mjs"

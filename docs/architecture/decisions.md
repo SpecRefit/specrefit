@@ -32,6 +32,8 @@ The owner requested a required successful PR build on 2026-10-02. GitHub Actions
 
 Git-tag versioning was accepted on 2026-10-02: clean `v`-prefixed SemVer tags determine the coordinated product version, and development builds identify their commit. Implementation and boundaries are recorded in [versioning.md](versioning.md). GitHub Releases is the planned desktop/CLI download channel; Maven Central is the planned channel for the future Maven integration. Publishing workflows and native installer version mappings remain future work.
 
+The owner authorized automatic main development downloads under GitHub Releases Latest on 2026-10-02. Main builds retain development versions even at stable-tagged commits. Each build uses a distinct `develop-<commit>` download container, published as Latest only after complete verification. GitHub requires a non-prerelease container for Latest; titles and artifact versions still identify development builds. Current artifacts and publication boundaries are documented in [development-builds.md](development-builds.md). This does not authorize stable or Maven Central publication.
+
 ## Provisional implementation proposals
 
 - TypeScript and `yaml` are now adopted only for the bounded viewer; Electron is accepted and has a Linux runtime-bundling experiment. The broader transformation representation and Node.js-based CLI distribution remain provisional. See [viewer evidence and limitations](viewer.md).

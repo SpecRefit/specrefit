@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { verifyBuildVersion } from './version.mjs';
 
@@ -6,6 +6,7 @@ import { verifyBuildVersion } from './version.mjs';
 if (process.platform !== 'linux') throw new Error('This evaluated packaging path currently targets Linux only. Native Windows/macOS packaging is pending.');
 const version = verifyBuildVersion(JSON.parse(await readFile('dist/web/version.json', 'utf8')));
 const destination = resolve(`artifacts/specrefit-${process.platform}-${process.arch}`);
+await rm(destination, { recursive: true, force: true });
 await mkdir(destination, { recursive: true });
 await cp('node_modules/electron/dist', destination, { recursive: true });
 const appRoot = join(destination, 'resources/app');
