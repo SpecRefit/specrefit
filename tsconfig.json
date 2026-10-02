@@ -10,5 +10,5 @@
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "skipLibCheck": true
   },
-  "include": ["packages/**/*.ts", "apps/web/**/*.ts", "tests/engine.test.ts"]
+  "include": ["packages/**/*.ts", "apps/web/**/*.ts", "tests/engine.test.ts", "tests/transform.test.ts"]
 }

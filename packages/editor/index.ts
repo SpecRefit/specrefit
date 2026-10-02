@@ -1,4 +1,5 @@
 import { canonical, child, displayId, limits, object, string, valueAt, type Inspection, type Item, type Location, type Operation, type Source, type Value } from '../engine/index.ts';
+import { suggestSchemaName, type Rule, type Preview } from '../engine/transform.ts';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', cls = ''): HTMLElementTagNameMap[K] => {
   const node = document.createElement(tag); node.textContent = text; if (cls) node.className = cls; return node;
@@ -10,7 +11,10 @@ const at = (location: Location, key: string | number): Location => ({ ...locatio
 
 export function mount(host: HTMLElement, sample: Source[]) {
   let sources: Source[] = [], entry = '', report: Inspection | undefined;
-  let view: 'operations' | 'schemas' | 'files' | 'diagnostics' = 'operations';
+  let view: 'operations' | 'schemas' | 'files' | 'diagnostics' | 'refit' = 'operations';
+  let rules: Rule[] = [], preview: Preview | undefined;
+  let configDraft: string | undefined;
+  let ruleSequence = 0;
   let selected = 0, search = '', method = '', activeTag = '';
   let worker: Worker | undefined, generation = 0;
   let pane: HTMLElement;
@@ -26,20 +30,23 @@ export function mount(host: HTMLElement, sample: Source[]) {
     if (window.matchMedia('(max-width: 580px)').matches) pane.scrollIntoView({ block: 'start' });
   };
   function process() {
+    preview = undefined;
+    host.querySelector('.preview-result')?.remove(); host.inert = true;
     clearFeedback();
     worker?.terminate(); const run = ++generation;
     announce('Reading your contract locally…');
     const current = worker = new Worker(new URL('./worker.js', document.baseURI), { type: 'module' });
     const timer = window.setTimeout(() => {
-      current.terminate(); if (run === generation) fail('Inspection exceeded 10 seconds and was stopped. Try fewer or smaller files.');
+      current.terminate(); if (run === generation) { host.inert = false; fail('Inspection exceeded 10 seconds and was stopped. Try fewer or smaller files.'); }
     }, 10_000);
     current.onmessage = event => {
       clearTimeout(timer); current.terminate(); if (run !== generation) return;
+      host.inert = false;
       if (event.data.error) { fail(event.data.error); return; }
       report = event.data.report; selected = Math.min(selected, Math.max(0, report!.operations.length - 1));
       history.length = 0; render(); announce(`${report!.operations.length} operations. ${report!.diagnostics.length} diagnostics. Inspection is not a full specification validation.`);
     };
-    current.onerror = () => { clearTimeout(timer); current.terminate(); if (run === generation) fail('The inspection worker could not start. Reload the app and try again.'); };
+    current.onerror = () => { clearTimeout(timer); current.terminate(); if (run === generation) { host.inert = false; fail('The inspection worker could not start. Reload the app and try again.'); } };
     current.postMessage({ entry, sources });
   }
   async function importFiles(files: FileList | null, target?: string) {
@@ -98,7 +105,11 @@ export function mount(host: HTMLElement, sample: Source[]) {
             const link = button(`↗ ${string(val)}`, () => showNode({ location: target, value: valueAt(report?.documents.find(d => d.id === target.document)?.value, target.pointer) ?? null, schema: edge.schema }, 'Referenced definition'), 'reference');
             const row = el('div', '', 'ref-row'); row.append(el('span', '$ref'), link); details.append(row);
           } else if (edge) details.append(el('p', `$ref: ${text(val)} · ${edge.missing ? 'Document missing — see Diagnostics' : 'Unresolved — see Diagnostics or source'}`, 'warning'));
-          else details.append(tree(val, next, key));
+          else {
+            if (object(val) && !Object.hasOwn(val, '$ref') && report?.schemaLocations.some(l => l.document === next.document && l.pointer === next.pointer))
+              details.append(button(`Explore ${key} schema →`, () => showNode({ value: val, location: next, schema: true }, `${key} schema`), 'text-button'));
+            details.append(tree(val, next, key));
+          }
         }
         offset += 100; if (offset < entries.length) details.append(more);
       }
@@ -117,13 +128,28 @@ export function mount(host: HTMLElement, sample: Source[]) {
       if (item.schema && item.value.$ref && report?.version.startsWith('3.0.')) pane.append(el('p', 'In OpenAPI 3.0, schema $ref siblings do not add constraints. They remain visible below.', 'notice'));
       if (item.schema && item.value.$ref && !report?.version.startsWith('3.0.')) pane.append(el('p', 'A schema $ref and its sibling constraints apply together. Follow the reference to inspect its constraints.', 'notice'));
     }
+    if (item.schema) pane.append(extractionControls(item));
     pane.append(tree(item.value, item.location, 'All fields', true)); focusPane();
   }
   function section(title: string, id: string): HTMLElement { const s = el('section', '', 'detail-section'); s.id = id; s.append(el('h2', title)); return s; }
   function mediaTypes(item: Item): HTMLElement {
     const group = el('div', '', 'media-types');
     if (!object(item.value) || !object(item.value.content)) return group;
+    const op = report?.operations[selected];
+    if (op && item.location.document === op.location.document && item.location.pointer.startsWith(op.location.pointer + '/')) {
+      const choices = el('fieldset'); choices.append(el('legend', 'Media types to keep'));
+      const inputs = Object.keys(item.value.content).filter(k => !k.startsWith('x-')).map(name => {
+        const input = el('input'); input.type = 'checkbox'; input.checked = true;
+        choices.append(label(name, input)); return { name, input };
+      });
+      choices.append(button('Add media selection rule', () => {
+        const keep = inputs.filter(i => i.input.checked).map(i => i.name);
+        if (!keep.length) { fail('Choose at least one media type to keep.'); return; }
+        addRule({ id: `rule-${++ruleSequence}`, kind: 'select-media', target: { document: item.location.document, pointer: child(item.location.pointer, 'content') }, onMissing: 'error', keep, expectedTypes: inputs.map(i => i.name) });
+      })); group.append(choices);
+    } else group.append(el('p', 'Shared definition: media selection here would affect other uses. This preview only edits inline operation content.', 'muted'));
     for (const [name, media] of Object.entries(item.value.content)) {
+      if (name.startsWith('x-')) continue;
       const loc = at(at(item.location, 'content'), name);
       const row = el('div', '', 'media-type'); row.append(el('code', name));
       if (object(media) && media.schema !== undefined) row.append(button('Explore schema →', () => showNode({ value: media.schema, location: at(loc, 'schema'), schema: true }, `${name} schema`), 'text-button'));
@@ -206,8 +232,84 @@ export function mount(host: HTMLElement, sample: Source[]) {
         const card = el('article', '', 'definition-card'); card.append(el('h2', displayId(doc.id)), button('Read original source', () => showSource({ document: doc.id, pointer: '', line: 1, column: 1 })));
         if (doc.value !== undefined) card.append(tree(doc.value, { document: doc.id, pointer: '', line: 1, column: 1 }, 'Inspect all document fields')); pane.append(card);
       }
-    } else diagnostics();
+    } else if (view === 'refit') showRefit();
+    else diagnostics();
   }
+  function addRule(rule: Rule) {
+    while (rules.some(r => r.id === rule.id)) rule.id = `rule-${++ruleSequence}`;
+    configDraft = undefined;
+    rules.push(rule); preview = undefined; worker?.terminate(); generation++;
+    clearFeedback(); view = 'refit'; render(); focusPane();
+  }
+  function extractionControls(item: Item) {
+    const group = el('div', '', 'refit-controls');
+    const op = report?.operations[selected];
+    if (!op || !object(item.value) || Object.hasOwn(item.value, '$ref') || item.location.document !== op.location.document || !item.location.pointer.startsWith(op.location.pointer + '/')) return group;
+    const name = el('input'); name.value = suggestSchemaName(op, item.location.pointer);
+    group.append(label('Shared model name', name), button('Add extraction rule', () => {
+      addRule({ id: `rule-${++ruleSequence}`, kind: 'extract-schema', target: { document: item.location.document, pointer: item.location.pointer }, onMissing: 'error', name: name.value, expected: structuredClone(item.value) });
+    }), el('p', 'The proposed name is saved with the rule. Existing models are never overwritten or silently merged.', 'muted'));
+    return group;
+  }
+  function runPreview(config: unknown) {
+    preview = undefined; clearFeedback(); worker?.terminate(); const run = ++generation;
+    announce('Computing transformation preview locally…');
+    const current = worker = new Worker(new URL('./worker.js', document.baseURI), { type: 'module' });
+    const timer = window.setTimeout(() => { current.terminate(); if (run === generation) fail('Transformation exceeded 10 seconds. Reduce the inputs or rules.'); }, 10_000);
+    current.onmessage = event => {
+      clearTimeout(timer); current.terminate(); if (run !== generation) return;
+      if (event.data.error) { fail(event.data.error); return; }
+      preview = event.data.preview;
+      if (preview?.configuration) { rules = preview.configuration.rules; configDraft = undefined; }
+      view = 'refit'; render(); focusPane(); announce('Transformation preview ready. Original files are unchanged.');
+    };
+    current.onerror = () => { clearTimeout(timer); current.terminate(); if (run === generation) fail('Transformation worker failed. No output is available.'); };
+    current.postMessage({ action: 'transform', input: { entry, sources }, config });
+    showRefit();
+  }
+  function showRefit() {
+    pane.replaceChildren(el('p', 'REPRODUCIBLE CHANGES', 'eyebrow'), el('h1', 'Rules and preview'), el('p', 'Rules run in the listed order on the original files. Remove a rule to exclude that target. Preview only: contract export and bundling are not available yet.', 'description'));
+    rules.forEach((rule, i) => {
+      const card = el('article', '', 'definition-card');
+      card.append(el('h2', `${i + 1}. ${rule.kind === 'select-media' ? 'Keep ' + rule.keep.join(', ') : 'Extract ' + rule.name}`), el('p', `${displayId(rule.target.document)} · ${rule.target.pointer}`));
+      const edit = (action: () => void) => { action(); configDraft = undefined; preview = undefined; worker?.terminate(); generation++; showRefit(); };
+      const up = button('Move up', () => edit(() => { [rules[i - 1], rules[i]] = [rules[i], rules[i - 1]]; })); up.disabled = i === 0;
+      const down = button('Move down', () => edit(() => { [rules[i + 1], rules[i]] = [rules[i], rules[i + 1]]; })); down.disabled = i === rules.length - 1;
+      const missing = el('select');
+      for (const value of ['error', 'warning'] as const) { const option = el('option', value); option.value = value; option.selected = value === rule.onMissing; missing.append(option); }
+      missing.addEventListener('change', () => edit(() => { rule.onMissing = missing.value as 'error' | 'warning'; }));
+      card.append(up, down, button('Remove rule', () => edit(() => { rules.splice(i, 1); })), label('Missing target', missing)); pane.append(card);
+    });
+    if (!rules.length) pane.append(el('p', 'Add media selection rules from a request or response, or explore an inline schema to extract a shared model.', 'notice'));
+    const config = el('textarea'); config.rows = 8; config.spellcheck = false; config.value = configDraft ?? JSON.stringify({ version: 1, rules }, null, 2);
+    config.addEventListener('input', () => { configDraft = config.value; preview = undefined; worker?.terminate(); generation++; pane.querySelector('.preview-result')?.remove(); });
+    pane.append(label('Rules JSON (copy to save, paste to replay)', config), button('Preview these rules', () => {
+      try {
+        if (config.value.length > 4_000_000) throw new Error();
+        const parsed: unknown = JSON.parse(config.value);
+        runPreview(parsed);
+      } catch { fail('Rules must be valid JSON, at most 4 MB.'); }
+    }));
+    if (!preview) return;
+    const output = el('section', '', 'preview-result'); output.append(el('h2', preview.files.length ? 'Transformation preview' : 'Preview blocked'));
+    for (const message of preview.diagnostics) output.append(el('p', message, 'warning'));
+    for (const change of preview.changes) output.append(el('p', `${change.rule} · ${change.status}: ${change.message}`, change.status === 'error' || change.status === 'warning' ? 'warning' : 'notice'));
+    for (const file of preview.files) {
+      const original = sources.find(s => canonical(s.id) === file.id)?.text ?? '';
+      const details = el('details'); details.append(el('summary', `${displayId(file.id)} · ${file.text === original ? 'unchanged' : 'changed'}`));
+      if (file.text !== original) {
+        const before = original.split('\n'), after = file.text.split('\n');
+        let start = 0, end = 0;
+        while (start < before.length && start < after.length && before[start] === after[start]) start++;
+        while (end < before.length - start && end < after.length - start && before[before.length - 1 - end] === after[after.length - 1 - end]) end++;
+        const diff = [...before.slice(start, before.length - end).map(l => '- ' + l), ...after.slice(start, after.length - end).map(l => '+ ' + l)].join('\n');
+        details.append(el('h3', 'Changed lines'), el('pre', diff));
+      }
+      details.append(el('h3', 'Exact resulting file'), el('pre', file.text)); output.append(details);
+    }
+    pane.append(output);
+  }
+
   function diagnostics() {
     if (!report) return;
     pane.replaceChildren(el('p', 'INPUT REVIEW', 'eyebrow'), el('h1', 'Diagnostics'), el('p', 'This is a bounded inspection, not a complete OpenAPI or JSON Schema validation. Unsupported constructs remain in the source.', 'description'));
@@ -228,7 +330,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
       const main = el('main', '', 'welcome'); main.id = 'content';
       main.append(el('p', 'OPENAPI · LOCAL BY DESIGN', 'eyebrow'), el('h1', 'Make sense of\nyour API contract.'), el('p', 'Explore endpoints, trace models and understand what goes in and comes out. Start with your YAML or JSON files.', 'intro'));
       const actions = el('div', '', 'actions'); actions.append(picker('Open contract files'), picker('Open a folder', true), button('Explore an example →', () => { sources = sample.map(s => ({ ...s })); entry = sample[0].id; process(); }, 'text-button')); main.append(actions);
-      main.append(el('p', 'OpenAPI 3.0 · 3.1 · 3.2   /   Read-only preview', 'muted'), el('p', 'Your files stay on this device. No uploads, account or automatic reference downloads.', 'privacy-note'));
+      main.append(el('p', 'OpenAPI 3.0 · 3.1 · 3.2   /   Transformation preview', 'muted'), el('p', 'Your files stay on this device. No uploads, account or automatic reference downloads.', 'privacy-note'));
       const guide = el('div', '', 'guide');
       for (const [number, title, content] of [['01', 'See the operations', 'Browse by tag, method or search.'], ['02', 'Follow the models', 'Navigate schemas and recursive references.'], ['03', 'Fill in the gaps', 'Supply missing files exactly where they belong.']]) {
         const card = el('article'); card.append(el('p', number, 'eyebrow'), el('h2', title), el('p', content)); guide.append(card);
@@ -236,9 +338,9 @@ export function mount(host: HTMLElement, sample: Source[]) {
       main.append(guide); host.append(main); return;
     }
     const toolbar = el('div', '', 'toolbar'); const title = el('div'); title.append(el('strong', report.title), el('span', `OpenAPI ${report.version || 'unknown'} · ${sources.length} files`, 'muted'));
-    const actions = el('div', '', 'actions'); actions.append(picker('Add files'), picker('Add folder', true), button('New project', () => { worker?.terminate(); generation++; clearFeedback(); sources = []; entry = ''; report = undefined; search = ''; method = ''; activeTag = ''; view = 'operations'; render(); announce('Ready to open a new project.'); })); toolbar.append(title, actions); host.append(toolbar);
+    const actions = el('div', '', 'actions'); actions.append(picker('Add files'), picker('Add folder', true), button('New project', () => { worker?.terminate(); generation++; clearFeedback(); sources = []; entry = ''; report = undefined; rules = []; preview = undefined; configDraft = undefined; ruleSequence = 0; search = ''; method = ''; activeTag = ''; view = 'operations'; render(); announce('Ready to open a new project.'); })); toolbar.append(title, actions); host.append(toolbar);
     const tabs = el('nav', '', 'tabs'); tabs.setAttribute('aria-label', 'Contract views');
-    for (const [id, title] of [['operations', 'Operations'], ['schemas', 'Schemas'], ['files', 'Files'], ['diagnostics', `Diagnostics${report.diagnostics.length ? ` (${report.diagnostics.length})` : ''}`]] as const) {
+    for (const [id, title] of [['operations', 'Operations'], ['schemas', 'Schemas'], ['files', 'Files'], ['refit', 'Rules and preview'], ['diagnostics', `Diagnostics${report.diagnostics.length ? ` (${report.diagnostics.length})` : ''}`]] as const) {
       const b = button(title, () => { view = id; history.length = 0; render(); focusPane(); }); if (id === view) b.setAttribute('aria-current', 'page'); tabs.append(b);
     }
     host.append(tabs);

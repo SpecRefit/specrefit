@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { _electron as electron } from 'playwright';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { inspect } from '../packages/engine/index.ts';
+import { inspect, valueAt } from '../packages/engine/index.ts';
+import { transform } from '../packages/engine/transform.ts';
 
 test('sandboxed Electron uses the same worker and UI without renderer privileges', async () => {
   const application = await electron.launch({ args: ['.'] });
@@ -19,6 +20,17 @@ test('sandboxed Electron uses the same worker and UI without renderer privileges
     const input = { entry: 'petstore.yaml', sources };
     const report = await page.evaluate(input => new Promise((resolve, reject) => { const w = new Worker('./worker.js', { type: 'module' }); w.onmessage = e => { w.terminate(); resolve(e.data.report); }; w.onerror = reject; w.postMessage(input); }), input);
     assert.deepEqual(report, inspect(input));
+    const transformInput = { entry: 'api.yaml', sources: [{ id: 'api.yaml', text: await readFile('tests/fixtures/transform.yaml', 'utf8') }] };
+    const target = { document: 'api.yaml', pointer: '/paths/~1pets/post/requestBody/content' };
+    const schemaPointer = target.pointer + '/application~1json/schema';
+    const expected = valueAt(inspect(transformInput).documents[0].value, schemaPointer);
+    const config = { version: 1, rules: [
+      { id: 'extract', kind: 'extract-schema', target: {...target, pointer: schemaPointer}, name: 'Input', expected, onMissing: 'error' },
+      { id: 'media', kind: 'select-media', target, expectedTypes: ['application/json', 'application/problem+json', 'application/xml'], keep: ['application/json'], onMissing: 'error' },
+    ] };
+    const actual = await page.evaluate(({input,config}) => new Promise((resolve,reject) => {const w=new Worker('./worker.js',{type:'module'});w.onmessage=e=>{w.terminate();resolve(e.data.preview)};w.onerror=reject;w.postMessage({action:'transform',input,config});}), {input:transformInput,config});
+    assert.deepEqual(actual, transform(transformInput,config));
+    assert.equal(actual.files.length, 1);
     await page.screenshot({ path: 'artifacts/electron-operation.png', fullPage: true });
   } finally { await application.close(); }
 });
