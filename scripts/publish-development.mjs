@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { verifyInventory } from './development-artifacts.mjs';
+import { requireCompleteDownloads } from './assemble-development.mjs';
 
 /** One rolling prerelease. Serialize callers; never read or modify stable Latest. */
 export async function publishDevelopment({ build, assets, api, upload, runUrl }) {
@@ -23,7 +24,7 @@ export async function publishDevelopment({ build, assets, api, upload, runUrl })
     if (comparison.status === 'ahead') return release.html_url;
     if (!['behind', 'identical'].includes(comparison.status)) throw new Error('Development history diverged; preview was not changed.');
   }
-  const body = `Rolling development preview — not a stable release. Replaced after successful main builds.\n\nVersion: \`${build.version}\`\nCommit: \`${build.commit}\`\nBuild: ${runUrl}\n\nDownloads contain the built artifacts, manifest and SHA-256 checksums. Currently: static browser assets and an experimental Linux x64 desktop bundle including its runtime. Linux system libraries are required; Windows/macOS/CLI/Maven packages remain planned.\n\nLatest is reserved for stable releases. This preview may be briefly unavailable during replacement; failed publication can be retried.`;
+  const body = `Rolling development preview — not a stable release. Replaced after successful main builds.\n\nVersion: \`${build.version}\`\nCommit: \`${build.commit}\`\nBuild: ${runUrl}\n\nDownloads: browser assets and portable desktop packages for Windows x64, macOS Apple Silicon/Intel and Linux x64, including the Electron runtime. Extract the archive and launch SpecRefit.exe, SpecRefit.app or SpecRefit. Windows is unsigned; macOS has only an ad-hoc signature, with no Developer ID or notarization. OS security policy may block these development builds. Linux system libraries remain prerequisites. Manifest and SHA-256 checksums identify the complete tested set. Installers, CLI and Maven packages remain planned.\n\nLatest is reserved for stable releases. This preview may be briefly unavailable during replacement; failed publication can be retried.`;
   const metadata = { target_commitish: build.commit, name: 'Development preview', body, prerelease: true, make_latest: 'false' };
   const matches = (remote, local) => remote?.state === 'uploaded' && remote.size === local.size && remote.digest === `sha256:${local.sha256}`;
   const complete = r => r.assets.length === assets.length && assets.every(a => matches(r.assets.find(r => r.name === a.name), a));
@@ -54,6 +55,7 @@ async function main() {
   if (!/^[\w.-]+\/[\w.-]+$/.test(env.GITHUB_REPOSITORY ?? '') || !env.GH_TOKEN) throw new Error('GitHub repository and token are required.');
   const directory = resolve('artifacts/development');
   const build = await verifyInventory(directory, env.GITHUB_SHA);
+  requireCompleteDownloads(build.files);
   const assets = await Promise.all([...build.files.map(f => f.name), 'manifest.json', 'SHA256SUMS'].map(async name => {
     const bytes = await readFile(join(directory, name));
     return { name, bytes, size: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') };

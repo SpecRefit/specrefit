@@ -30,7 +30,7 @@ The viewer deliberately reports unimplemented schema scope/anchor and dialect be
 
 ## 1. Feasibility and foundational decisions
 
-The next agreed development step is Windows and macOS desktop packaging together, including their runtimes and native CI checks. macOS development artifacts will be unsigned and unnotarized because the owner has no Apple Developer account; signing/notarization is deferred. These packages do not exist yet.
+Windows and macOS desktop packaging is implemented together, including bundled runtimes, separate Intel/Apple Silicon Mac builds and native CI checks. First native acceptance is pending; see [packaging evidence](docs/architecture/desktop-packaging.md). macOS development artifacts use certificate-free ad-hoc signatures, without Developer ID or notarization. After acceptance, the next implementation step is full project configuration and CLI replay; installers and manual downloaded-package acceptance remain open.
 
 This milestone remains open. The viewer provides evidence for browser parsing, shared inspection, fixed multi-file references, source retention and an Electron Linux runtime bundle. The first transformation slice provides bounded media selection/extraction and transformed-byte parity evidence; bundled preview output now has bounded evidence; full project configuration and packaged CLI parity remain open.
 

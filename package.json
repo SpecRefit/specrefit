@@ -19,7 +19,9 @@
     "test:development": "node --test tests/development.test.mjs",
     "archive:development": "node scripts/archive-development.mjs",
     "test:browser": "playwright test",
-    "test:desktop": "xvfb-run -a node --test tests/desktop.test.mjs",
+    "test:desktop": "node scripts/test-desktop.mjs",
+    "test:desktop-archive": "node scripts/test-desktop-archive.mjs",
+    "test:packaging": "node --test tests/packaging.test.mjs",
     "package:desktop": "node scripts/package-desktop.mjs"
   },
   "dependencies": {
@@ -28,6 +30,7 @@
     "yaml": "2.9.1"
   },
   "devDependencies": {
+    "@electron/packager": "20.3.0",
     "@playwright/test": "1.63.0",
     "@types/node": "24.19.1",
     "electron": "44.5.1",

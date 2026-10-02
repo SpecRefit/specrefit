@@ -2,13 +2,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { _electron as electron } from 'playwright';
 import { readFile, mkdtemp, writeFile, link, rm } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { resolve, join } from 'node:path';
 import { inspect, valueAt } from '../packages/engine/index.ts';
 import { transform } from '../packages/engine/transform.ts';
 import { createOutput } from '../packages/engine/export.ts';
+import { desktopTarget, packageRoot } from '../scripts/desktop-target.mjs';
+
+const packaged = !!process.env.SPECREFIT_TEST_PACKAGE;
+function launch() {
+  if (!packaged) return electron.launch({ args: ['.'] });
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => key.toLowerCase() !== 'path'));
+  return electron.launch({ executablePath: join(packageRoot(), desktopTarget().executable), args: [], env: { ...env, PATH: '' } });
+}
 
 test('sandboxed Electron uses the same worker and UI without renderer privileges', async () => {
-  const application = await electron.launch({ args: ['.'] });
+  const application = await launch();
   try {
     const page = await application.firstWindow();
     await page.getByRole('button', { name: 'Explore an example' }).click();
@@ -43,7 +51,7 @@ test('sandboxed Electron uses the same worker and UI without renderer privileges
 });
 
 test('portable bundle starts with no Node installation on its PATH', { skip: !process.env.SPECREFIT_TEST_PACKAGE }, async () => {
-  const application = await electron.launch({ executablePath: resolve('artifacts/specrefit-linux-x64/electron'), args: [], env: { ...process.env, PATH: '/usr/bin:/bin' } });
+  const application = await launch();
   try {
     const page = await application.firstWindow();
     await page.getByRole('button', { name: 'Explore an example' }).click();
@@ -52,6 +60,13 @@ test('portable bundle starts with no Node installation on its PATH', { skip: !pr
     const built = JSON.parse(await readFile('dist/web/version.json', 'utf8'));
     assert.equal(await application.evaluate(({ app }) => app.getVersion()), built.version);
     assert.equal(await page.locator('.preview').textContent(), built.version);
+    assert.equal(await application.evaluate(() => process.env.PATH), '');
+    assert.equal(await application.evaluate(() => process.arch), process.arch);
+    assert.equal(await application.evaluate(({app}) => app.isPackaged), true);
+    const root=join(packageRoot(),desktopTarget().resources,'app');
+    assert.equal(await readFile(join(root,'LICENSE'),'utf8'),await readFile('LICENSE','utf8'));
+    assert.equal(await readFile(join(root,'dist/web/THIRD_PARTY_NOTICES.txt'),'utf8'),await readFile('dist/web/THIRD_PARTY_NOTICES.txt','utf8'));
+    assert.equal(await page.evaluate(async()=>{try {await fetch('https://example.invalid/blocked');return false;}catch{return true;}}),true);
   } finally { await application.close(); }
 });
 
@@ -60,7 +75,7 @@ test('desktop exports through a scoped bridge, handles cancellation and protects
   const source=resolve(root,'api.json'), alias=resolve(root,'alias.json'), output=resolve(root,'result.json');
   const text='{"openapi":"3.1.2","info":{"title":"Export","version":"1"},"paths":{}}';
   await writeFile(source,text); await link(source,alias);
-  const application=await electron.launch({args:['.']});
+  const application=await launch();
   try {
     const page=await application.firstWindow();
     await page.evaluate(()=>{location.hash='content';});
@@ -89,7 +104,7 @@ test('desktop exports through a scoped bridge, handles cancellation and protects
 
 test('desktop saves multiple reviewed files into the chosen folder without a ZIP', async () => {
   const root=await mkdtemp(resolve('artifacts/desktop-folder-'));
-  const application=await electron.launch({args:['.']});
+  const application=await launch();
   try {
     const page=await application.firstWindow();
     await page.getByRole('button',{name:'Explore an example'}).click();

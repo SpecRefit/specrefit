@@ -43,7 +43,7 @@ The website is independently maintained. Product modules belong together in this
 
 ## Development status
 
-Development requires Git, Node.js 24 and npm in a Linux environment. Windows contributors can use WSL. Node is a development prerequisite only; the Electron distribution includes its own runtime. Run the commands below from the repository root, with Node and npm available on PATH. Machine-specific installation paths and cache settings belong in the ignored `DEVELOPMENT.local.md`, not in this README.
+Development requires Git, Node.js 24 and npm. Run workstation builds/tests in Linux or WSL; native Windows/macOS packaging is verified on CI runners. Node is a development prerequisite only; the Electron distribution includes its own runtime. Run the commands below from the repository root, with Node and npm available on PATH. Machine-specific installation paths and cache settings belong in the ignored `DEVELOPMENT.local.md`, not in this README.
 
 One-time setup for a fresh checkout (development dependencies and explicit runtime/browser downloads need network access):
 
@@ -53,7 +53,7 @@ node node_modules/electron/install.js
 npx playwright install chromium firefox webkit
 ```
 
-Linux desktop tests require Xvfb, unzip and the browser/Electron system libraries. Playwright can install the supported distribution's browser libraries with `npx playwright install-deps`; installing OS packages requires administrator access. Development archiving additionally uses GNU tar and gzip. Native Windows/macOS packaging is not implemented yet.
+Linux desktop tests require Xvfb, unzip and the browser/Electron system libraries. Playwright can install the supported distribution's browser libraries with `npx playwright install-deps`; installing OS packages requires administrator access. Archiving uses GNU tar/gzip on Linux, system tar on Windows and ditto on macOS. See [native packaging and acceptance boundaries](docs/architecture/desktop-packaging.md).
 
 Start the browser viewer:
 
@@ -79,20 +79,22 @@ npm run check          # TypeScript checks
 npm test               # Inspection and transformation regression cases
 npm run test:version   # Git-tag and development-version cases
 npm run test:development # Development artifact/publication checks
+npm run test:packaging # Complete native download-set validation
 npm run test:browser   # Browser workflows and exact Node output parity in three browser engines
 npm run test:desktop   # Electron parity and sandbox checks; package test skipped unless enabled
 npm run package:desktop
 SPECREFIT_TEST_PACKAGE=1 npm run test:desktop
-npm run archive:development # Browser/Linux archives, manifest and checksums
+npm run archive:development # Host-native archive, manifest and checksums; web archive on Linux
+npm run test:desktop-archive # Extract and test the actual download with an empty PATH
 ```
 
-Pull requests targeting `main`, pushes to `main` and pushed `v*` tags run the [Build workflow](.github/workflows/build.yml) on GitHub's Ubuntu 24.04 runner with Node 24.21.0: `npm ci --ignore-scripts`, `npm run check`, `npm test`, `npm run test:version`, `npm run test:development`, then `npm run build`. PR/main runs also package and test Electron before archiving the development downloads. The `Build` check must succeed on an up-to-date PR before merging, alongside the existing code-owner approval rule. There are no path filters that skip documentation-only PRs. Chromium, Firefox and WebKit tests also run in the required Build job. Native multi-OS acceptance remains separate; a green build does not establish those results.
+Pull requests targeting `main`, pushes to `main` and pushed `v*` tags run the [Build workflow](.github/workflows/build.yml) with Node 24.21.0. Browser/engine checks run on Ubuntu 24.04, including Chromium, Firefox and WebKit. PR/main builds additionally package and test on Linux x64, Windows x64, macOS Apple Silicon and macOS Intel. The required `Build` check aggregates all applicable jobs and validates the complete matching artifact set; it must succeed on an up-to-date PR alongside code-owner approval. No path filters skip documentation-only PRs. Clean-machine and downloaded-app security prompts remain separate acceptance work.
 
 Build versions come from Git: a clean `v0.1.0` tag yields `0.1.0`, while untagged/PR builds use `0.0.0-dev+g<commit>` and local changes add `.dirty`. Fetch tags before building. The browser header and packaged desktop use the same generated version; the root manifest's `0.0.0-dev` is only a development placeholder. Main CI explicitly forces the development channel. See [versioning and release channels](docs/architecture/versioning.md) for exact behavior.
 
-Successful main builds automatically publish complete development downloads under [Development preview](https://github.com/SpecRefit/specrefit/releases/tag/development), verified by the first successful main publication. Current downloads are browser assets and an experimental Linux x64 desktop bundle, plus a manifest and checksums. Windows/macOS/CLI/Maven artifacts join only when implemented. One rolling prerelease replaces the previous preview; GitHub Latest is reserved for future stable releases. See [development build behavior and verification](docs/architecture/development-builds.md). Stable releases and Maven Central publication remain future work.
+Successful main builds automatically publish complete development downloads under [Development preview](https://github.com/SpecRefit/specrefit/releases/tag/development). This pipeline adds Windows x64 and macOS Apple Silicon/Intel packages to browser assets and Linux x64, with one manifest and checksums, after all native checks pass. One rolling prerelease replaces the previous preview; GitHub Latest is reserved for future stable releases. See [development build behavior and verification](docs/architecture/development-builds.md). Installers, stable releases, CLI and Maven Central publication remain future work.
 
-`package:desktop` creates a Linux x64 development bundle at `artifacts/specrefit-linux-x64/`, including Electron, application files, Apache-2.0 and third-party notices. Launch its `electron` executable; the package test starts it without Node on PATH. This is an experimental Linux package, **not** native Windows/macOS support or clean-machine acceptance. Windows/macOS packages, installers, signing, auto-update design and stable release distribution remain open.
+`package:desktop` creates the current native host's package at `artifacts/specrefit-<platform>-<arch>/`, including Electron, application files, Apache-2.0 and third-party notices. Extract the complete download and launch `SpecRefit.exe` on Windows, `SpecRefit.app` on macOS or `SpecRefit` on Linux. Windows builds are unsigned; macOS has an ad-hoc signature only, without Developer ID or notarization. OS security policy may block these development packages. See [launch instructions, CI evidence and limitations](docs/architecture/desktop-packaging.md). No installer or separately installed Node runtime is required.
 
 Transformation previews generate the exact contract output used by export. Cross-runtime checks compare output file names, contract bytes and ZIP bytes as well as inspection results. Electron protects imported source identities when saving files. Full project configuration, CLI, archive import/fetch security, native acceptance, coverage import and SonarQube remain future work. See [ROADMAP.md](ROADMAP.md).
 

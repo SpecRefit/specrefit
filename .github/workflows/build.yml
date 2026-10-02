@@ -15,8 +15,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build
+  verify:
+    name: Browser and engine
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -42,38 +42,100 @@ jobs:
         run: npm run test:version
       - name: Test development publication
         run: npm run test:development
+      - name: Test native artifact assembly
+        run: npm run test:packaging
       - name: Build viewer
         run: npm run build
       - name: Install browser engines and Linux libraries
         run: npx playwright install --with-deps chromium firefox webkit
       - name: Verify browser behavior and engine parity
         run: npm run test:browser
-      - name: Prepare desktop runtime and Linux libraries
-        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
-        run: |
-          node node_modules/electron/install.js
-      - name: Package and verify desktop
-        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
-        run: |
-          npm run package:desktop
-          SPECREFIT_TEST_PACKAGE=1 npm run test:desktop
-      - name: Archive development downloads
-        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
-        run: npm run archive:development
-      - name: Hand off verified development downloads
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: development-downloads
-          path: artifacts/development/
-          if-no-files-found: error
-          retention-days: 7
-          compression-level: 0
       - name: Hand off tested playground
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
           path: dist/web
+
+  native:
+    name: Desktop (${{ matrix.target }})
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04, target: linux-x64 }
+          - { os: windows-2025, target: win32-x64 }
+          - { os: macos-15, target: darwin-arm64 }
+          - { os: macos-15-intel, target: darwin-x64 }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      SPECREFIT_BUILD_CHANNEL: development
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.21.0'
+          package-manager-cache: false
+      - run: npm ci --ignore-scripts
+      - name: Check runner architecture
+        shell: bash
+        env:
+          EXPECTED_TARGET: ${{ matrix.target }}
+        run: node -e "if (process.platform + '-' + process.arch !== process.env.EXPECTED_TARGET) process.exit(1)"
+      - name: Verify native engine and source protection
+        run: npm test
+      - name: Install Linux desktop libraries
+        if: runner.os == 'Linux'
+        run: npx playwright install-deps chromium
+      - run: npm run build
+      - run: npm run package:desktop
+      - run: npm run archive:development
+      - name: Extract and test the actual download without Node on PATH
+        run: npm run test:desktop-archive
+      - name: Hand off tested native downloads
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: development-${{ matrix.target }}
+          path: artifacts/development/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  build:
+    name: Build
+    needs: [verify, native]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every applicable check
+        env:
+          VERIFIED: ${{ needs.verify.result }}
+          NATIVE: ${{ needs.native.result }}
+          NATIVE_REQUIRED: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' }}
+        run: |
+          test "$VERIFIED" = success
+          if [ "$NATIVE_REQUIRED" = true ]; then test "$NATIVE" = success; fi
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        if: needs.native.result == 'success'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        if: needs.native.result == 'success'
+        with:
+          node-version: '24.21.0'
+          package-manager-cache: false
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        if: needs.native.result == 'success'
+        with:
+          pattern: development-*
+          path: artifacts/incoming/
+      - name: Verify complete matching download set
+        if: needs.native.result == 'success'
+        run: node scripts/assemble-development.mjs
 
   deploy-playground:
     name: Deploy playground
@@ -132,8 +194,10 @@ jobs:
       - name: Retrieve this run's verified downloads
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
-          name: development-downloads
-          path: artifacts/development/
+          pattern: development-*
+          path: artifacts/incoming/
+      - name: Assemble the complete tested download set
+        run: node scripts/assemble-development.mjs
       - name: Replace rolling development preview
         env:
           GH_TOKEN: ${{ github.token }}

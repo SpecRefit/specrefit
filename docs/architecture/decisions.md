@@ -64,6 +64,8 @@ The owner agreed to Windows and macOS packaging together after export. Developme
 
 ## Hosted preview and website (2026-10-02)
 
+Native desktop packaging implementation (2026-10-03): use the reviewed Electron Packager build dependency and stage only application assets. Target Windows x64 and separate macOS arm64/x64 packages on native CI, alongside Linux x64. macOS uses certificate-free ad-hoc signatures for launchability, without Developer ID/notarization; this implements the owner's no-account development path. The required Build gate must include every native job and complete artifact assembly. See [packaging design and acceptance evidence](desktop-packaging.md).
+
 The owner requested the playground and development download availability on the website. Publish the tested browser viewer from successful main builds to GitHub Pages at play.specrefit.dev, keeping all contract processing local. Browser checks join the required Build gate. See [publication boundaries](playground.md); stable download channels must be separated before stable releases are introduced.
 
 ## First transformations (2026-10-02)
