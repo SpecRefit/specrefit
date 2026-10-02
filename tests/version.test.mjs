@@ -44,6 +44,12 @@ test('pull request builds stay development versions even at a tagged commit', t 
   const r = repository(t); r.git('tag', 'v0.1.0');
   assert.match(r.read({ GITHUB_EVENT_NAME: 'pull_request' }).version, /^0\.0\.0-dev/);
 });
+test('the development channel never turns a tagged main commit into a stable release', t => {
+  const r = repository(t); r.git('tag', 'v1.0.0');
+  const version = r.read({ SPECREFIT_BUILD_CHANNEL: 'development' });
+  assert.match(version.version, /^0\.0\.0-dev\+g/); assert.equal(version.tag, null);
+  assert.throws(() => r.read({ SPECREFIT_BUILD_CHANNEL: 'typo' }), /Unknown SPECREFIT_BUILD_CHANNEL/);
+});
 test('tag builds reject invalid SemVer and tags on a different commit', t => {
   const r = repository(t);
   for (const name of ['v01.2.3', 'v1.2', 'v1.2.3-beta.01', 'v1.2.3-', 'v1.2.3+']) {
