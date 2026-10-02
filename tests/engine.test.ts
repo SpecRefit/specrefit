@@ -160,3 +160,7 @@ test('schema property names beginning x- are real properties, not ignored extens
   const r = run({ ...contract(), components: { schemas: { X: { type: 'object', properties: { 'x-value': { $ref: 'missing.json' } } } } } });
   assert.equal(r.references[0].missing, canonical('missing.json'));
 });
+test('inline schema navigation exposes the schema source line, not its operation line', () => {
+  const r = inspect({ entry: 'petstore.yaml', sources: [{ id: 'petstore.yaml', text: readFileSync('tests/fixtures/petstore.yaml', 'utf8') }] });
+  assert.equal(r.locations.find(l => l.pointer === '/paths/~1pets/get/responses/200/content/application~1json/schema')?.line, 33);
+});

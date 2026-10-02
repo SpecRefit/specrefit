@@ -18,6 +18,7 @@ export interface Inspection {
   documents: { id: string; text: string; value?: Value }[];
   operations: Operation[]; schemas: { name: string; item: Item }[];
   references: Reference[]; diagnostics: Diagnostic[];
+  locations: Location[];
 }
 export const limits = { files: 64, fileBytes: 2_000_000, totalBytes: 8_000_000, nodes: 100_000, depth: 80 };
 export const object = (v: unknown): v is ObjectValue => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -49,7 +50,7 @@ interface Parsed { source: Source; value?: Value; ast?: ReturnType<typeof parseD
 
 /** Pure in-memory inspection. No filesystem, network, browser or Electron APIs. */
 export function inspect(input: unknown): Inspection {
-  const result: Inspection = { entry: '', version: '', title: 'Contract', description: '', documents: [], operations: [], schemas: [], references: [], diagnostics: [] };
+  const result: Inspection = { entry: '', version: '', title: 'Contract', description: '', documents: [], operations: [], schemas: [], references: [], diagnostics: [], locations: [] };
   const docs = new Map<string, Parsed>();
   function location(document: string, pointer = ''): Location {
     const d = docs.get(document);
@@ -155,6 +156,7 @@ export function inspect(input: unknown): Inspection {
     const visitKey = `${key(loc)}:${role}:${uncertainBase}`;
     if (visited.has(visitKey)) return; visited.add(visitKey);
     if (depth > limits.depth || visited.size > limits.nodes) { diagnostic('LIMIT', 'Reference traversal reached its safety limit. Inspection is partial.', loc.document, loc.pointer); return; }
+    result.locations.push(loc);
     const v = get(loc);
     if (role === 'schema' && typeof v === 'boolean') {
       if (family === '0' && !loc.pointer.endsWith('/additionalProperties')) diagnostic('SCHEMA_VERSION', 'Boolean schemas are not part of OpenAPI 3.0.', loc.document, loc.pointer);
