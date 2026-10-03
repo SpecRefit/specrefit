@@ -21,6 +21,24 @@ export function mount(host: HTMLElement, sample: Source[]) {
   let selected = 0, search = '', method = '', activeTag = '';
   let worker: Worker | undefined, generation = 0;
   let pane: HTMLElement;
+  const compactWindow = window.matchMedia('(max-width: 800px)');
+  let navigationOpen = false;
+  // A browser may blur a CSS-hidden control before delivering the media-query event.
+  let lastFocused: Element | null = null;
+  document.addEventListener('focusin', event => { lastFocused = event.target instanceof Element ? event.target : null; });
+  function syncNavigation() {
+    host.classList.toggle('navigation-open', compactWindow.matches && navigationOpen);
+    host.querySelector('.navigation-toggle')?.setAttribute('aria-expanded', String(compactWindow.matches && navigationOpen));
+  }
+  compactWindow.addEventListener('change', () => {
+    const active = document.activeElement === document.body ? lastFocused : document.activeElement;
+    if (!compactWindow.matches) navigationOpen = false;
+    syncNavigation();
+    if (compactWindow.matches && !navigationOpen && active?.closest('.sidebar'))
+      host.querySelector<HTMLButtonElement>('.navigation-toggle')?.focus({ preventScroll: true });
+    else if (!compactWindow.matches && active?.classList.contains('navigation-toggle'))
+      host.querySelector<HTMLInputElement>('.sidebar input')?.focus({ preventScroll: true });
+  });
   const history: (() => void)[] = [];
   let currentPage: () => void = () => showSelected();
   const status = document.querySelector<HTMLElement>('#status')!;
@@ -29,8 +47,8 @@ export function mount(host: HTMLElement, sample: Source[]) {
   const fail = (message: string) => { status.textContent = ''; feedback.textContent = message; feedback.hidden = false; feedback.scrollIntoView({ block: 'nearest' }); };
   const announce = (message: string) => { status.textContent = message; };
   const focusPane = () => {
+    navigationOpen = false; syncNavigation();
     pane.scrollTop = 0; pane.tabIndex = -1; pane.focus({ preventScroll: true });
-    if (window.matchMedia('(max-width: 580px)').matches) pane.scrollIntoView({ block: 'start' });
   };
   function process() {
     preview = undefined;
@@ -380,14 +398,23 @@ export function mount(host: HTMLElement, sample: Source[]) {
       }
       main.append(guide); host.append(main); return;
     }
-    const toolbar = el('div', '', 'toolbar'); const title = el('div'); title.append(el('strong', report.title), el('span', `OpenAPI ${report.version || 'unknown'} · ${sources.length} files`, 'muted'));
-    const actions = el('div', '', 'actions'); actions.append(picker('Add files'), picker('Add folder', true), button('New project', () => { worker?.terminate(); generation++; clearFeedback(); sources = []; entry = ''; report = undefined; rules = []; outputSettings = { bundle: false, format: 'yaml' }; preview = undefined; configDraft = undefined; ruleSequence = 0; search = ''; method = ''; activeTag = ''; view = 'operations'; render(); announce('Ready to open a new project.'); })); toolbar.append(title, actions); host.append(toolbar);
+    const toolbar = el('div', '', 'toolbar'); const title = el('div'); title.title = report.title; title.append(el('strong', report.title), el('span', `OpenAPI ${report.version || 'unknown'} · ${sources.length} files`, 'muted'));
+    const actions = el('div', '', 'actions'); actions.append(picker('Add files'), picker('Add folder', true), button('New project', () => { worker?.terminate(); generation++; clearFeedback(); sources = []; entry = ''; report = undefined; rules = []; outputSettings = { bundle: false, format: 'yaml' }; preview = undefined; configDraft = undefined; ruleSequence = 0; navigationOpen = false; search = ''; method = ''; activeTag = ''; view = 'operations'; render(); announce('Ready to open a new project.'); })); toolbar.append(title, actions); host.append(toolbar);
     const tabs = el('nav', '', 'tabs'); tabs.setAttribute('aria-label', 'Contract views');
+    const navigationToggle = button('Operations & filters', () => { navigationOpen = !navigationOpen; syncNavigation(); }, 'navigation-toggle');
+    navigationToggle.setAttribute('aria-controls', 'operation-sidebar');
+    toolbar.insertBefore(navigationToggle, actions);
     for (const [id, title] of [['operations', 'Operations'], ['schemas', 'Schemas'], ['files', 'Files'], ['refit', 'Rules and preview'], ['diagnostics', `Diagnostics${report.diagnostics.length ? ` (${report.diagnostics.length})` : ''}`]] as const) {
       const b = button(title, () => { view = id; history.length = 0; render(); focusPane(); }); if (id === view) b.setAttribute('aria-current', 'page'); tabs.append(b);
     }
     host.append(tabs);
     const layout = el('div', '', 'workspace'); const sidebar = el('aside', '', 'sidebar');
+    sidebar.id = 'operation-sidebar'; sidebar.setAttribute('aria-label', 'Operation navigation');
+    sidebar.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && compactWindow.matches) {
+        navigationOpen = false; syncNavigation(); navigationToggle.focus({ preventScroll: true });
+      }
+    });
     const select = el('select'); select.setAttribute('aria-label', 'Entry document');
     for (const s of sources) { const o = el('option', displayId(canonical(s.id))); o.value = s.id; o.selected = s.id === entry; select.append(o); }
     select.addEventListener('change', () => { entry = select.value; selected = 0; process(); }); sidebar.append(label('Entry document', select));
@@ -414,7 +441,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
     }
     input.addEventListener('input', () => { search = input.value; updateList(); }); filter.addEventListener('change', () => { method = filter.value; updateList(); }); tags.addEventListener('change', () => { activeTag = tags.value; updateList(); }); updateList();
     pane = el('main', '', 'content'); pane.id = 'content'; layout.append(sidebar, pane); host.append(layout); showSelected();
-    sidebar.scrollTop = sidebarScroll;
+    sidebar.scrollTop = sidebarScroll; syncNavigation();
   }
   render();
 }

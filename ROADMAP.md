@@ -21,7 +21,7 @@ This roadmap sequences implementation; it does not remove the requirements in [p
 - [x] Implement portable Windows x64 and macOS Apple Silicon/Intel packaging alongside Linux, with required native runner checks and complete artifact assembly. [Packaging evidence and limits](docs/architecture/desktop-packaging.md) distinguish CI coverage from manual downloaded-package acceptance and installers.
 - [x] Deliver the first bounded product release, 0.1.0; remaining roadmap requirements stay open.
 - [x] Publish [0.1.0](https://github.com/SpecRefit/specrefit/releases/tag/v0.1.0) after its [successful tag build](https://github.com/SpecRefit/specrefit/actions/runs/37075840504), with five verified archives plus manifest/checksums. See [release evidence](docs/architecture/stable-releases.md) and [scope/notes](docs/releases/0.1.0.md).
-- [ ] Improve smaller-window layout and header wrapping, tracked in [issue #13](https://github.com/SpecRefit/specrefit/issues/13). The owner explicitly kept this separate from 0.1.0 publication.
+- [x] Implement compact operation/filter navigation and a non-wrapping version header for [issue #13](https://github.com/SpecRefit/specrefit/issues/13), with browser and native-window regression coverage described in [viewer evidence](docs/architecture/viewer.md). This follows 0.1.0 and does not alter its published assets.
 
 The separate landing page is already published at [specrefit.dev](https://specrefit.dev). It is not an application release.
 

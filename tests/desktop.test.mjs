@@ -15,6 +15,28 @@ function launch() {
   return electron.launch({ executablePath: join(packageRoot(), desktopTarget().executable), args: [], env: { ...env, PATH: '' } });
 }
 
+test('native window resizing keeps details and compact navigation usable', async () => {
+  const application=await launch();
+  try {
+    const page=await application.firstWindow();
+    await page.getByRole('button',{name:'Explore an example'}).click();
+    await page.getByRole('heading',{name:'Find your next companion',exact:true}).waitFor();
+    for(const [width,height] of [[900,600],[600,500],[480,500],[1200,800]]) {
+      await application.evaluate(({BrowserWindow}, size)=>BrowserWindow.getAllWindows()[0].setContentSize(...size),[width,height]);
+      await page.waitForFunction(w=>innerWidth===w,width);
+      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+      assert((await page.locator('#content').boundingBox()).height>190);
+      if(width<=800) {
+        const toggle=page.getByRole('button',{name:'Operations & filters',exact:true});
+        await toggle.click();
+        await page.locator('.operation-button').first().click();
+        assert.equal(await toggle.getAttribute('aria-expanded'),'false');
+        assert(await page.locator('#content').isVisible());
+      }
+    }
+  } finally {await application.close();}
+});
+
 test('sandboxed Electron uses the same worker and UI without renderer privileges', async () => {
   const application = await launch();
   try {

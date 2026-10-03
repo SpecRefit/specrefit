@@ -119,6 +119,7 @@ test('large local JSON import remains navigable and searchable', async ({ page }
   await expect(page.getByRole('heading', { name: 'Model999', exact: true })).toBeInViewport();
   expect(await pane.evaluate(el => el.scrollTop)).toBe(0);
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Operations & filters', exact: true }).click();
   await page.getByRole('navigation', { name: 'Operations by tag' }).getByRole('button').click();
   await expect(pane.locator('h1')).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
