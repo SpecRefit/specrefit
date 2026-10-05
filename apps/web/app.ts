@@ -1,8 +1,10 @@
 import { mount } from '../../packages/editor/index.ts';
 import { initializeTheme } from '../../packages/editor/theme.ts';
 import sample from './sample.json';
+import { showPlaygroundVersion } from './playground-version.ts';
 initializeTheme(document.querySelector<HTMLButtonElement>('#theme')!);
 const versionLabel = document.querySelector<HTMLElement>('.preview')!;
 versionLabel.textContent = __SPECREFIT_BUILD__.version;
 versionLabel.title = `Build ${__SPECREFIT_BUILD__.commit}${__SPECREFIT_BUILD__.dirty ? ' (local changes)' : ''}`;
+showPlaygroundVersion(versionLabel, document.querySelector<HTMLElement>('#build-banner')!, __SPECREFIT_PLAYGROUND__);
 mount(document.querySelector<HTMLElement>('#app')!, sample);

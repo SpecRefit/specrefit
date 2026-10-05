@@ -71,6 +71,8 @@ If processing Y blocks, show available analysis and the blocking reasons without
 
 ## Quality and product experience
 
+For the hosted playground specifically, show the published release version when its source is that release. After newer commits, visibly identify a development build with the commit hash and release baseline. Automatically rebuild the current main playground after stable GitHub release publication, without requiring another commit (owner request, 2026-10-05). Resolve this information during the build; do not add browser network checks. Desktop artifact versioning remains unchanged.
+
 The owner authorized an initial read-only viewer on 2026-10-02: grouped/searchable operations, complete operation inspection, schema/reference navigation including recursive models, multi-file input, targeted missing-reference supply, and actionable diagnostics with partial inspection. The [viewer scope](../architecture/viewer.md) records the agreed experience and evidence. Editing, transformation, comparison and export remain required later. Electron is the agreed desktop direction with a shared browser/desktop editor and processing implementation; native compatibility is subject to verification.
 
 Safety, useful diagnostics, maintainability and usable workflows are product requirements. Shared code alone is not proof of parity: compare actual outputs across runtimes. Verify distributions on clean supported operating systems without developer tools. Include keyboard accessibility and meaningful errors in UI acceptance.

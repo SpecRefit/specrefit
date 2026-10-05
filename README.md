@@ -36,7 +36,7 @@ Source documents remain protected. SpecRefit outputs ordinary OpenAPI documents 
 
 - Product: [SpecRefit/specrefit](https://github.com/SpecRefit/specrefit).
 - Website: [SpecRefit/specrefit.github.io](https://github.com/SpecRefit/specrefit.github.io), published at [specrefit.dev](https://specrefit.dev).
-- Browser playground address: `play.specrefit.dev`; deployment setup and verification are tracked in [playground publication](docs/architecture/playground.md).
+- Browser playground address: `play.specrefit.dev`; the header identifies a published stable release, or a development banner shows the release baseline, commit count and linked commit hash. Stable release publication automatically rebuilds the current main playground after the complete Build gate. See [playground publication](docs/architecture/playground.md) and [version metadata](docs/architecture/versioning.md#hosted-playground-presentation).
 - Maven groupId: `dev.specrefit`; the owner confirmed Maven Central namespace verification on 2026-10-03. Artifact IDs and publication infrastructure remain to be implemented.
 
 The website is independently maintained. Product modules belong together in this repository and are intended to be released in coordinated versions.
@@ -79,7 +79,7 @@ Build and test commands:
 ```bash
 npm run check          # TypeScript checks
 npm test               # Inspection, transformations, native input and source protection
-npm run test:version   # Git-tag and development-version cases
+npm run test:version   # Git-tag versions, playground release metadata and refresh guards
 npm run test:development # Development artifact/publication checks
 npm run test:packaging # Complete native download-set validation
 npm run test:browser   # Browser workflows and exact Node output parity in three browser engines

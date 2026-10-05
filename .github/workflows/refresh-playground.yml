@@ -1,0 +1,24 @@
+name: Refresh playground after release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: playground-release-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: github.event.release.prerelease == false && github.event.release.draft == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Rebuild current main with published release metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run build.yml --repo "$GITHUB_REPOSITORY" --ref main

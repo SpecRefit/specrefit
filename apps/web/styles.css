@@ -543,11 +543,14 @@ body.inspecting {
   flex-direction:column;
   overflow:hidden
 }
-.inspecting>.app-header,.inspecting>.feedback,.inspecting>.status {
+.inspecting>.app-header,.inspecting>.build-banner,.inspecting>.feedback,.inspecting>.status {
   flex:none
 }
 .inspecting>.feedback { max-height:20dvh; overflow:auto }
 .inspecting>.status { max-height:15dvh; overflow:auto }
+.build-banner:not([hidden]) { display:flex; flex-wrap:wrap; align-items:center; gap:4px 16px; padding:8px 3.5%; background:var(--warning-background); color:var(--warning-text); border-bottom:1px solid var(--line); font-size:.85rem; line-height:1.5 }
+.build-banner a { color:inherit; font-family:ui-monospace,monospace; text-underline-offset:3px }
+.inspecting>.build-banner { max-height:20dvh; overflow:auto }
 .inspecting #app {
   display:flex;
   flex-direction:column;
