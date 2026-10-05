@@ -1,14 +1,12 @@
 # Versioned GitHub releases
 
-## Current checkpoint: 0.2.0 preparation
+## Current checkpoint: 0.2.0 published
 
-The owner authorized GitHub release **0.2.0 on 2026-10-05**, including all improvements since 0.1.0. This covers the annotated tag, verification, stable Latest publication, playground acceptance and website version update. It does not authorize merging the product PR, publishing future stable versions or publishing to package registries.
+[SpecRefit 0.2.0](https://github.com/SpecRefit/specrefit/releases/tag/v0.2.0) was published as stable Latest on 2026-10-05 at `06:31:36 UTC`, after the owner merged [preparation PR #37](https://github.com/SpecRefit/specrefit/pull/37). The annotated tag points to `3dffeb3ff1d695fd79c14cf2b6bd57f6f199bfba`. [Tag Build 37272119716](https://github.com/SpecRefit/specrefit/actions/runs/37272119716) passed every browser/engine and native check plus complete download assembly.
 
-Preparation is on `codex/release-0.2.0`, with [release notes](../releases/0.2.0.md) and the reusable procedure below. **No v0.2.0 tag, draft or published release has been created during preparation.** Next: the owner merges the preparation PR, then the agent verifies the resulting main build and proceeds with the already-authorized release. Find the preparation PR by its head branch; inspect live state before resuming to avoid duplicating a tag or release.
+All seven assets were verified in WSL against the exact tag and commit, then their remote names, sizes, uploaded states and SHA-256 digests were compared before publication. Latest resolves to v0.2.0. The rolling development prerelease, its identity and every asset remained unchanged. Do not recreate this release, retag it or replace its published files.
 
-All product improvements were already merged at the preparation baseline `3a7331ed7d962a330d5fca5b1184fa36998264d8`; [main Build 37269177684](https://github.com/SpecRefit/specrefit/actions/runs/37269177684) succeeded. This baseline is not a preselected release SHA: use the reviewed preparation merge commit after it exists. Included changes are resize/navigation (#15), native relative-reference discovery (#32), contract-wide media preference (#34), playground build identity (#35) and cache freshness (#36).
-
-The owner-maintained local `docs/project-handoff.md` edit is unrelated and must not be staged or overwritten. At handoff, preserve unrelated changes and inspect both local and remote state. A tag build uses a clean CI checkout, so local edits are never included just because a tag is created against an explicit commit.
+Post-publication acceptance is complete and recorded below. The only product-repository follow-up is the release-evidence documentation PR; the owner merges it. Future stable releases still need explicit authorization, and package registries remain out of scope. Inspect live state before resuming instead of relying on a stale checkpoint. Preserve unrelated local edits, including the owner-maintained `docs/project-handoff.md` change.
 
 ## Publication boundaries
 
@@ -111,6 +109,16 @@ Record the release URL, exact tag SHA, tag Build run, seven-asset verification, 
 For a fresh chat, leave an explicit checkpoint: prepared PR awaiting owner merge, tag build pending, draft awaiting verification, published awaiting refresh, or complete. Include verified IDs and the next action. Do not infer unfinished work from an old checkpoint without checking live GitHub state. Never store credentials in handoff documents or release notes.
 
 ## Published release evidence
+
+### 0.2.0
+
+Published on 2026-10-05 at `06:31:36 UTC`: [SpecRefit 0.2.0](https://github.com/SpecRefit/specrefit/releases/tag/v0.2.0), stable Latest, annotated tag commit `3dffeb3ff1d695fd79c14cf2b6bd57f6f199bfba`. [Preparation PR #37](https://github.com/SpecRefit/specrefit/pull/37) was owner-merged and [main Build 37271604595](https://github.com/SpecRefit/specrefit/actions/runs/37271604595) passed before tagging. [Tag Build 37272119716](https://github.com/SpecRefit/specrefit/actions/runs/37272119716) passed all browser/engine and four native jobs plus complete archive assembly. Artifact `release-downloads` (ID `11328931287`) was downloaded, its exact seven entries extracted and verified in WSL with `verifyInventory` and `requireCompleteDownloads`. Before draft release `403426756` was published, all seven remote asset names, sizes, uploaded states and SHA-256 digests matched the local files, including the manifest and checksum file. Latest resolved to v0.2.0; the rolling development release and all its asset identities/digests were unchanged by publication.
+
+The real release event succeeded: [refresh run 37272873562](https://github.com/SpecRefit/specrefit/actions/runs/37272873562) dispatched [main Build and Pages run 37272883250](https://github.com/SpecRefit/specrefit/actions/runs/37272883250). Every required check and playground deployment passed; development publication was correctly skipped. Live Chromium acceptance in WSL verified HTTPS, visible version 0.2.0 at the exact tag commit, hidden development banner, cache-free startup manifest, example navigation and local JSON import. All observed application requests were same-origin GETs; no contract upload occurred.
+
+The website was updated at commit `9bb92f7df5b8bbe248eebe764918a3827c9d7f56`; [website Pages run 37272907900](https://github.com/SpecRefit/specrefit.github.io/actions/runs/37272907900) passed. Both local and live Chromium checks covered 390px/1440px layouts, light/dark themes, stable/development links, overflow, keyboard theme switching and the media illustration. The main download now says 0.2.0 and points to stable Latest; desktop reference guidance matches the new automatic local discovery behavior.
+
+Publication and hosted acceptance are complete. The release-evidence documentation branch is `codex/release-0.2.0-evidence`; find its PR by head branch and let the owner merge it. That merge will advance main beyond the tag, so a development banner is expected afterward. It does not change the published 0.2.0 downloads. No registry publication occurred, and the documented signing/clean-machine limitations remain open.
 
 ### 0.1.0
 
