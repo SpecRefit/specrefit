@@ -2,6 +2,10 @@
 
 Baseline recorded 2026-10-02. This register summarizes decisions; the linked requirements and architecture documents define their details. Add dates and rationale when decisions change instead of relying on chat history.
 
+## Hosted release identity (2026-10-05)
+
+Accepted and implemented for the hosted playground: separate release-presentation metadata from artifact versions, because main downloads intentionally remain development artifacts even at a stable tag. CI filters reachable SemVer tags against published non-prerelease GitHub releases. Stable publication dispatches the existing Build workflow on main, retaining all native/browser gates and the main-only Pages environment. The dispatch deploys the playground but does not republish development downloads. This avoids extra browser requests and avoids relying on an old workflow run still being rerunnable. The release-event integration awaits a subsequent real stable publication; fixtures cover the guards and metadata behavior.
+
 ## Contract-wide media preference (2026-10-05)
 
 The owner requested a single preference across all request/response content and clarified that JSON was only an example: all advertised types must be options, a sole offered type must remain, and multipart often needs preservation. Use exact user-selected keys discovered by the shared engine, with all choices initially selected, including multipart. For multiple offerings, keep the intersection with the preferences; without a match, keep the original offerings. Represent the choice as one ordered `select-contract-media` rule so it can be replayed and composed with extraction. Shared content is explicitly within this rule's scope; ordinary targeted rules keep their narrower safeguards. See [behavior and verification](transformations.md#contract-wide-media-preference). Broader selector scopes and per-operation exceptions remain future work.

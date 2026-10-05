@@ -8,6 +8,8 @@ Tag builds now use the same browser/engine and four native package checks as mai
 
 ## First release procedure
 
+Once the playground refresh workflow is merged, publishing a stable release also dispatches a complete Build of current main. Successful checks refresh the hosted release label or development banner automatically, without a new commit. The playground stays on current main even if the published release is older. Verify the refresh and subsequent Pages deployment after publication; prereleases do not trigger it. This does not authorize automatic stable release publication or modify existing release assets.
+
 1. Merge the reviewed release-preparation PR to main and verify its main checks. Preserve unrelated local edits; create the annotated `v0.1.0` tag explicitly on the reviewed main commit, never on an assumed current branch. Verify no local or remote tag of that name already exists. Push that tag without force.
 2. Wait for the tag's complete Build workflow to succeed, including native startup/export tests and archive assembly. Verify the workflow's tag and commit. Download only that run's `release-downloads` artifact into a fresh directory. Do not relabel development downloads.
 3. Verify the inventory using `verifyInventory(directory, commit, 'v0.1.0')` from `scripts/development-artifacts.mjs` and `requireCompleteDownloads(manifest.files)` from `scripts/assemble-development.mjs`. Inspect the version, commit and five archive names. All local automated checks run in WSL.
