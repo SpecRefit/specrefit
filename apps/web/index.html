@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; worker-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; worker-src 'self'; connect-src https://play.specrefit.dev/build-manifest.json; base-uri 'none'; form-action 'none'; object-src 'none'">
   <meta name="color-scheme" content="light dark">
   <title>SpecRefit · Contract inspector</title>
   <link rel="icon" href="./mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./bootstrap.js" data-build="BUILD_ID" data-app="APP_FILE"></script>
 </head>
 <body>
   <a class="skip" href="#content">Skip to contract details</a>
