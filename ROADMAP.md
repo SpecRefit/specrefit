@@ -4,6 +4,8 @@ This roadmap sequences implementation; it does not remove the requirements in [p
 
 ## Current state
 
+- [ ] Publish owner-authorized 0.2.0 after the release-preparation PR is merged and its tag passes the complete Build gate. [Release notes](docs/releases/0.2.0.md) collect the improvements since 0.1.0; [the release checkpoint and runbook](docs/architecture/stable-releases.md) describe the remaining actions. No 0.2.0 tag or release has been created during preparation.
+
 - [x] Implement hosted cache freshness before editor startup, content-addressed assets and actionable failures, with stale-page regression cases; see [cache behavior and rollout limits](docs/architecture/playground.md#cache-freshness). Live deployment acceptance follows merge.
 - [x] Implement hosted release identification and a development banner with commit identity; see [versioning behavior and verification](docs/architecture/versioning.md#hosted-playground-presentation). Stable publication dispatches a complete main rebuild; live event acceptance awaits the next stable release after merge.
 - [x] Agree product scope, reproducibility constraints and repository boundaries.
