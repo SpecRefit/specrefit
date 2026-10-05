@@ -57,7 +57,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
     clearFeedback();
     worker?.terminate(); const run = ++generation;
     announce('Reading your contract locally…');
-    const current = worker = new Worker(new URL('./worker.js', document.baseURI), { type: 'module' });
+    const current = worker = new Worker(new URL(__SPECREFIT_WORKER__, document.baseURI), { type: 'module' });
     const timer = window.setTimeout(() => {
       current.terminate(); if (run === generation) { host.inert = false; fail('Inspection exceeded 10 seconds and was stopped. Try fewer or smaller files.'); }
     }, 10_000);
@@ -286,7 +286,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
   function runPreview(config: unknown) {
     preview = undefined; clearFeedback(); worker?.terminate(); const run = ++generation;
     announce('Computing transformation preview locally…');
-    const current = worker = new Worker(new URL('./worker.js', document.baseURI), { type: 'module' });
+    const current = worker = new Worker(new URL(__SPECREFIT_WORKER__, document.baseURI), { type: 'module' });
     const timer = window.setTimeout(() => { current.terminate(); if (run === generation) fail('Transformation exceeded 10 seconds. Reduce the inputs or rules.'); }, 10_000);
     current.onmessage = event => {
       clearTimeout(timer); current.terminate(); if (run !== generation) return;
@@ -419,7 +419,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
     if (!plan) return;
     clearFeedback(); worker?.terminate(); const run = ++generation;
     host.inert = true; announce('Preparing the reviewed output locally…');
-    const current = worker = new Worker(new URL('./worker.js', document.baseURI), { type: 'module' });
+    const current = worker = new Worker(new URL(__SPECREFIT_WORKER__, document.baseURI), { type: 'module' });
     const timer = window.setTimeout(() => { current.terminate(); if (run === generation) { host.inert = false; fail('Export exceeded 10 seconds. No download was started.'); } }, 10_000);
     current.onmessage = async event => {
       clearTimeout(timer); current.terminate(); if (run !== generation) return;

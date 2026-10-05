@@ -20,6 +20,14 @@ The landing page links to `https://github.com/SpecRefit/specrefit/releases/tag/d
 
 GitHub Latest identifies the latest stable release, currently 0.1.0. One rolling development prerelease uses the fixed development tag; the website links directly to it. Maven Central publication remains a separate future step.
 
+## Cache freshness
+
+GitHub Pages was observed on 2026-10-05 to serve HTML and scripts with `Cache-Control: max-age=600`. The application cannot change those hosting response headers. The hosted bootstrap now requests only `build-manifest.json` with `cache: no-store`, omitted credentials, a unique visit query and a 15-second timeout before loading the editor. The manifest contains a deterministic SHA-256 identity of the HTML template and generated assets, including release metadata through the app bundle. It contains no user or contract data. CSP permits this exact HTTPS manifest path; Electron separately blocks network traffic.
+
+When the HTML identity differs, a cache-busting navigation fetches the latest HTML before mounting any app code. A repeated mismatch fails visibly instead of causing a reload loop. App, worker, styles and logo have content-addressed filenames; matching immutable assets may safely remain cached. Desktop and localhost skip the manifest request and load their bundled assets directly. There is no background polling or interruption of an open editing session, including browser-history restoration of that session. Startup network failure shows a retry rather than silently running stale application code.
+
+This takes effect after the first load of the new bootstrap. An HTML document cached before this feature exists cannot execute the new check; during rollout it can still require one final hard refresh or expiration of the existing ten-minute cache. CDN propagation and availability can delay a deployment; the bootstrap reports inconsistent or unavailable metadata instead of promising instantaneous publication. Browser regression tests supply stale HTML with a retired app name and verify fresh navigation, matching assets, unique manifest requests, failure handling and loop prevention in all three engines.
+
 ## Acceptance
 
 Before merge, run the documented WSL build and browser checks and inspect the workflow permissions, event guards and diff. After the authorized main update, verify the Actions deployment, HTTPS response, displayed version, example navigation and local file import on the hosted site. DNS and Pages setup alone do not establish a working deployment. Keep the landing page's hosted-preview link unavailable until that verification succeeds.

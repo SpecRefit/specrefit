@@ -4,6 +4,7 @@ This roadmap sequences implementation; it does not remove the requirements in [p
 
 ## Current state
 
+- [x] Implement hosted cache freshness before editor startup, content-addressed assets and actionable failures, with stale-page regression cases; see [cache behavior and rollout limits](docs/architecture/playground.md#cache-freshness). Live deployment acceptance follows merge.
 - [x] Implement hosted release identification and a development banner with commit identity; see [versioning behavior and verification](docs/architecture/versioning.md#hosted-playground-presentation). Stable publication dispatches a complete main rebuild; live event acceptance awaits the next stable release after merge.
 - [x] Agree product scope, reproducibility constraints and repository boundaries.
 - [x] Record requirements, architecture direction, development instructions and open decisions in the product repository.

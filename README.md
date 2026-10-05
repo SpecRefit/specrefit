@@ -41,6 +41,8 @@ Source documents remain protected. SpecRefit outputs ordinary OpenAPI documents 
 
 The website is independently maintained. Product modules belong together in this repository and are intended to be released in coordinated versions.
 
+Each new hosted playground page load checks a small same-origin build manifest before starting, so a cached page refreshes to the latest deployed application without Ctrl+F5. Open editing sessions are not interrupted. Desktop/local builds remain offline. See [cache behavior and rollout limits](docs/architecture/playground.md#cache-freshness).
+
 ## Development status
 
 Development requires Git, Node.js 24 and npm. Run workstation builds/tests in Linux or WSL; native Windows/macOS packaging is verified on CI runners. Node is a development prerequisite only; the Electron distribution includes its own runtime. Run the commands below from the repository root, with Node and npm available on PATH. Machine-specific installation paths and cache settings belong in the ignored `DEVELOPMENT.local.md`, not in this README.

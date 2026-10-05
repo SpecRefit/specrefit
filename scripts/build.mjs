@@ -1,14 +1,32 @@
 import { build } from 'esbuild';
-import { mkdir, copyFile, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, copyFile, readFile, writeFile, readdir, unlink } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { buildVersion } from './version.mjs';
 import { playgroundVersion } from './playground-version.mjs';
 const version = buildVersion();
 const playground = playgroundVersion({ build: version });
+const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 await build({ entryPoints: ['packages/desktop/import.ts'], outfile: 'dist/desktop/import.cjs', bundle: true, platform: 'node', mainFields: ['module', 'main'], format: 'cjs', target: ['node22'], legalComments: 'eof' });
 await mkdir('dist/web', { recursive: true });
+for (const file of await readdir('dist/web')) if (/^(app|worker|styles|mark)-[a-f0-9]{64}\.(js|css|svg)$/.test(file)) await unlink(`dist/web/${file}`);
+async function fingerprint(file) {
+  const bytes = await readFile(`dist/web/${file}`);
+  const name = file.replace('.', `-${hash(bytes)}.`);
+  await writeFile(`dist/web/${name}`, bytes);
+  return name;
+}
+await build({ entryPoints: ['apps/web/worker.ts'], outfile: 'dist/web/worker.js', bundle: true, platform: 'browser', format: 'esm', target: ['es2022'], legalComments: 'eof' });
+const workerFile = await fingerprint('worker.js');
 const sample = await Promise.all(['petstore.yaml', 'schemas/pet.yaml'].map(async id => ({ id, text: await readFile(`tests/fixtures/${id}`, 'utf8') })));
-await build({ define: { __SPECREFIT_BUILD__: JSON.stringify(version), __SPECREFIT_PLAYGROUND__: JSON.stringify(playground) }, entryPoints: { app: 'apps/web/app.ts', worker: 'apps/web/worker.ts' }, outdir: 'dist/web', bundle: true, platform: 'browser', format: 'esm', target: ['es2022'], legalComments: 'eof', plugins: [{ name: 'sample', setup(b) { b.onResolve({ filter: /sample\.json$/ }, () => ({ path: 'sample', namespace: 'sample' })); b.onLoad({ filter: /.*/, namespace: 'sample' }, () => ({ contents: JSON.stringify(sample), loader: 'json' })); } }] });
-for (const file of ['index.html', 'styles.css', 'mark.svg']) await copyFile(`apps/web/${file}`, `dist/web/${file}`);
+await build({ define: { __SPECREFIT_BUILD__: JSON.stringify(version), __SPECREFIT_PLAYGROUND__: JSON.stringify(playground), __SPECREFIT_WORKER__: JSON.stringify(`./${workerFile}`) }, entryPoints: { app: 'apps/web/app.ts', bootstrap: 'apps/web/bootstrap.ts' }, outdir: 'dist/web', bundle: true, platform: 'browser', format: 'esm', target: ['es2022'], legalComments: 'eof', plugins: [{ name: 'sample', setup(b) { b.onResolve({ filter: /sample\.json$/ }, () => ({ path: 'sample', namespace: 'sample' })); b.onLoad({ filter: /.*/, namespace: 'sample' }, () => ({ contents: JSON.stringify(sample), loader: 'json' })); } }] });
+for (const file of ['styles.css', 'mark.svg']) await copyFile(`apps/web/${file}`, `dist/web/${file}`);
+const appFile = await fingerprint('app.js');
+const stylesFile = await fingerprint('styles.css');
+const markFile = await fingerprint('mark.svg');
+const template = await readFile('apps/web/index.html', 'utf8');
+const id = hash(JSON.stringify([template, appFile, workerFile, stylesFile, markFile, await readFile('dist/web/bootstrap.js', 'utf8')]));
+await writeFile('dist/web/index.html', template.replace('BUILD_ID', id).replace('APP_FILE', appFile).replaceAll('./styles.css', `./${stylesFile}`).replaceAll('./mark.svg', `./${markFile}`));
+await writeFile('dist/web/build-manifest.json', JSON.stringify({ id }) + '\n');
 await copyFile('LICENSE', 'dist/web/LICENSE');
 await writeFile('dist/web/version.json', JSON.stringify(version, null, 2) + '\n');
 await writeFile('dist/web/playground-version.json', JSON.stringify(playground, null, 2) + '\n');

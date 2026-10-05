@@ -4,6 +4,8 @@ Baseline recorded 2026-10-02. This register summarizes decisions; the linked req
 
 ## Hosted release identity (2026-10-05)
 
+Subsequent accepted cache correction: live GitHub Pages responses for both HTML and JavaScript showed `Cache-Control: max-age=600`. Hashing assets alone cannot refresh an already cached HTML document. A stable bootstrap therefore checks only the hosted same-origin build manifest with `cache: no-store` and a unique request query before mounting. A mismatch navigates once to fresh HTML; repeated mismatch or failed checks show a retry instead of looping or running stale code. Application, worker, CSS and logo names include their SHA-256 content hashes. This is an explicitly authorized exception to startup network checks for the hosted playground only; desktop/local startup and active editor sessions remain offline and uninterrupted. No new dependencies or service worker are introduced.
+
 Accepted and implemented for the hosted playground: separate release-presentation metadata from artifact versions, because main downloads intentionally remain development artifacts even at a stable tag. CI filters reachable SemVer tags against published non-prerelease GitHub releases. Stable publication dispatches the existing Build workflow on main, retaining all native/browser gates and the main-only Pages environment. The dispatch deploys the playground but does not republish development downloads. This avoids extra browser requests and avoids relying on an old workflow run still being rerunnable. The release-event integration awaits a subsequent real stable publication; fixtures cover the guards and metadata behavior.
 
 ## Contract-wide media preference (2026-10-05)

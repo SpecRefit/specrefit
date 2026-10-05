@@ -11,8 +11,8 @@ test('hosted playground uses embedded metadata and remains usable with a develop
   await page.route('https://play.specrefit.dev/**', async route => {
     const path = new URL(route.request().url()).pathname;
     const file = path === '/' ? 'index.html' : path.slice(1);
-    if (!['index.html', 'app.js', 'worker.js', 'styles.css', 'mark.svg'].includes(file)) return route.abort();
-    await route.fulfill({ path: `dist/web/${file}`, contentType: file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : file.endsWith('.svg') ? 'image/svg+xml' : 'text/html' });
+    if (!['index.html', 'bootstrap.js', 'build-manifest.json'].includes(file) && !/^(app|worker|styles|mark)-[a-f0-9]{64}\.(js|css|svg)$/.test(file)) return route.abort();
+    await route.fulfill({ path: `dist/web/${file}`, contentType: file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : file.endsWith('.svg') ? 'image/svg+xml' : file.endsWith('.json') ? 'application/json' : 'text/html' });
   });
   await page.goto('https://play.specrefit.dev/');
   await expect(page.locator('.preview')).toHaveAttribute('title', `Commit ${metadata.commit}${metadata.dirty ? ' (local changes)' : ''}`);
