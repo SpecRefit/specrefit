@@ -1,0 +1,13 @@
+request:
+  content:
+    application/json: {schema: {$ref: '#/model'}}
+    application/xml: {schema: {type: string}}
+response:
+  description: Shared result
+  content:
+    application/json: {schema: {$ref: '#/model'}}
+    application/xml: {schema: {type: string}}
+model:
+  type: object
+  properties:
+    child: {$ref: '#/model'}

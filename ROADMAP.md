@@ -27,6 +27,8 @@ The separate landing page is already published at [specrefit.dev](https://specre
 
 Desktop local reference discovery now loads dependencies inside the selected file's directory tree, using the shared engine and native source protection. See [behavior and regression coverage](docs/architecture/desktop-input.md). This is separate from future optional network retrieval and broader schema/reference semantics. The next planned product work remains saved project configuration and CLI replay.
 
+Contract-wide request/response media preference is now implemented as one ordered rule, with actual advertised types as choices, preservation of single/no-match content and explicit multipart retention. See [scope and regression coverage](docs/architecture/transformations.md#contract-wide-media-preference). Broader selection scopes, exceptions and full project configuration remain open.
+
 ## First viewer slice — 2026-10-02
 
 The owner authorized read/inspect before transformations. Implemented: local YAML/JSON import, folder structure, grouped/searchable operations, parameters with inheritance, bodies/responses/security, schemas and recursive JSON Pointer references, exact missing-document supply, source inspection and diagnostics. Engine checks cover representative 3.0.4/3.1.2/3.2.0 fixtures. Large-contract regressions cover over 12 MB and 1,200 operations; the owner-supplied GitHub REST contract also opens in all three tested browsers. Browser/Node and Electron/Node inspection parity is verified; the Linux development distribution includes its runtime. See [exact evidence and support boundaries](docs/architecture/viewer.md) and [commands](README.md#development-status).

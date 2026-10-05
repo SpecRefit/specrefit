@@ -1,0 +1,95 @@
+# Contract-wide preference fixture
+openapi: 3.1.2
+info: {title: Media preference fixture, version: '1'}
+paths:
+  /inline:
+    post:
+      requestBody:
+        content:
+          application/json:
+            # Preserve the selected schema and comment
+            schema: {type: string, x-owner: keep}
+          application/xml:
+            schema: {type: string}
+          multipart/form-data:
+            schema: {type: object, properties: {file: {type: string, format: binary}}}
+          x-content-note: Keep this extension
+      callbacks:
+        notify:
+          '{$request.body#/callbackUrl}':
+            post:
+              requestBody:
+                content:
+                  application/json: {schema: {type: string}}
+                  text/plain: {schema: {type: string}}
+              responses:
+                '204': {description: Received}
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json: {schema: {type: string}}
+            application/xml: {schema: {type: string}}
+        '400':
+          description: Invalid request
+          content:
+            application/json: {schema: {type: string}}
+            application/problem+json: {schema: {type: string}}
+  /single:
+    post:
+      requestBody:
+        content:
+          multipart/form-data: {schema: {type: object}}
+      responses:
+        '200':
+          description: Only XML
+          content:
+            application/xml: {schema: {type: string}}
+  /other:
+    get:
+      responses:
+        '200':
+          description: No JSON offered
+          content:
+            application/xml: {schema: {type: string}}
+            text/csv: {schema: {type: string}}
+  /shared:
+    post:
+      requestBody: {$ref: 'media-components.yaml#/request'}
+      responses:
+        '200': {$ref: 'media-components.yaml#/response'}
+  /shared-again:
+    post:
+      requestBody: {$ref: 'media-components.yaml#/request'}
+      responses:
+        '200': {$ref: 'media-components.yaml#/response'}
+webhooks:
+  incoming:
+    post:
+      requestBody:
+        content:
+          application/xml: {schema: {type: string}}
+          text/plain: {schema: {type: string}}
+      responses:
+        '204': {description: Received}
+components:
+  responses:
+    Unused:
+      description: Shared response available for reuse
+      content:
+        application/json: {schema: {type: string}}
+        application/xml: {schema: {type: string}}
+  parameters:
+    SeparateParameter:
+      in: header
+      name: X-Test
+      content:
+        application/parameter-only: {schema: {type: string}}
+  schemas:
+    Example:
+      type: object
+      example:
+        content:
+          application/example-only: literal example data
+      x-content:
+        application/extension-only: literal extension data
