@@ -2,6 +2,10 @@
 
 Baseline recorded 2026-10-02. This register summarizes decisions; the linked requirements and architecture documents define their details. Add dates and rationale when decisions change instead of relying on chat history.
 
+## Desktop local reference input (2026-10-05)
+
+The owner clarified that opening a local desktop entry must resolve local relative component files automatically. Implement this in a native input adapter that uses shared-engine reference discovery, with a bounded worker and the existing source-identity protection. Automatic reads stay inside each selected file's directory tree, including resolved link targets; other locations remain explicit selections. This scope prevents a contract from reading arbitrary files or making network requests. Browser file selection remains unchanged. The existing build bundles the adapter and parser dependencies into the desktop distribution, without adding dependencies. See [behavior, limits and regression evidence](desktop-input.md).
+
 ## First versioned release (2026-10-03)
 
 The owner requested 0.1.0 as the first GitHub release. Rebuild all browser/native downloads from the actual annotated version tag and verify them through the same required Build gate; never relabel development archives. Retain the verified set for deliberate draft upload and publication as Latest. Keep main's rolling Development preview separate. This initial 0.x release covers the existing feature slice, not completion of all requirements or production OS acceptance. See [release procedure](stable-releases.md).

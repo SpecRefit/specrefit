@@ -1,9 +1,10 @@
 const { app, BrowserWindow, session, ipcMain, dialog } = require('electron');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
+const { Worker } = require('node:worker_threads');
 const { ProtectedInputs, saveFile, saveDirectory, validateOutput, safePath } = require('./export.cjs');
 
-// Only source protection and user-selected output saving cross the privileged boundary.
+// Local input discovery, source protection and user-selected saving are scoped native adapters.
 app.enableSandbox();
 let window;
 app.whenReady().then(() => {
@@ -14,10 +15,31 @@ app.whenReady().then(() => {
   const pageUrl = pathToFileURL(path.join(webRoot, 'index.html')).href;
   const inputs = new ProtectedInputs();
   let saving = false;
+  let importing = false;
   const authorize = event => {
     if (event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame || event.senderFrame.url.split('#')[0] !== pageUrl) throw new Error('Untrusted export request.');
   };
   ipcMain.handle('specrefit:protect-inputs', async (event, paths) => { authorize(event); await inputs.add(paths); });
+  ipcMain.handle('specrefit:import-local-references', async (event, selections, input) => {
+    authorize(event);
+    if (importing) throw new Error('An import is already in progress.');
+    if (!Array.isArray(selections) || selections.length > 64) throw new Error('Invalid input selection.');
+    importing = true;
+    try {
+      await inputs.add(selections.map(item => item.path));
+      const result = await new Promise((resolve, reject) => {
+        const worker = new Worker(path.join(__dirname, 'import-worker.cjs'), { workerData: { selections, input } });
+        const timer = setTimeout(() => finish(new Error('Local reference discovery exceeded 30 seconds. Try fewer or smaller files.')), 30_000);
+        function finish(error, result) { clearTimeout(timer); void worker.terminate(); error ? reject(error) : resolve(result); }
+        worker.once('message', result => finish(result.error ? new Error(result.error) : undefined, result));
+        worker.once('error', error => finish(error));
+        worker.once('exit', code => { if (code) finish(new Error('Local reference discovery stopped.')); });
+      });
+      for (let i = 0; i < result.paths.length; i += 64) await inputs.add(result.paths.slice(i, i + 64));
+      for (const identity of result.identities) inputs.identities.add(identity);
+      return { sources: result.sources, diagnostics: result.diagnostics };
+    } finally { importing = false; }
+  });
   ipcMain.handle('specrefit:save-output', async (event, output, name) => {
     authorize(event); validateOutput(output);
     if (!safePath(name) || name.includes('/') || !/\.(?:zip|json|ya?ml)$/i.test(name)) throw new Error('Invalid output filename.');

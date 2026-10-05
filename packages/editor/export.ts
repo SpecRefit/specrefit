@@ -1,5 +1,7 @@
 import type { Download, ExportOutput } from '../engine/export.ts';
+import type { Source, Diagnostic } from '../engine/index.ts';
 export interface DesktopExport {
+  importLocalReferences(files: File[], ids: string[], input: { entry: string; sources: Source[] }): Promise<{ sources: Source[]; diagnostics: Diagnostic[] }>;
   protectInputs(files: File[]): Promise<void>;
   saveOutput(output: ExportOutput, name: string): Promise<{ saved: boolean; error?: string }>;
 }

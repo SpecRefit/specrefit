@@ -14,6 +14,8 @@ Native packaging is implemented for Windows x64, macOS arm64/x64 and Linux x64; 
 
 ## Non-negotiable boundaries
 
+Desktop file import now automatically supplies local relative references through a bounded native adapter; see docs/architecture/desktop-input.md. Keep discovery semantics in the shared engine, protect all discovered source identities before export, preserve directory containment and never turn this into automatic network fetching. npm test and npm run test:desktop cover the adapter and actual file-selection bridge; packaged CI runs the same integration test.
+
 - A single shared engine owns transformation semantics. Never reimplement rules in the UI, CLI or a plugin.
 - The same engine version, configuration, source bytes, resolved reference bytes and output settings must produce byte-identical output files through every interface and supported OS. Execution reports may contain explicitly separated non-deterministic metadata, but generated contracts must not.
 - Engine code cannot directly access the network, filesystem, Electron APIs or browser file APIs. Platform adapters supply documents and persist results.
