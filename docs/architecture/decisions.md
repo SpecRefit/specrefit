@@ -2,6 +2,10 @@
 
 Baseline recorded 2026-10-02. This register summarizes decisions; the linked requirements and architecture documents define their details. Add dates and rationale when decisions change instead of relying on chat history.
 
+## Contract-wide media preference (2026-10-05)
+
+The owner requested a single preference across all request/response content and clarified that JSON was only an example: all advertised types must be options, a sole offered type must remain, and multipart often needs preservation. Use exact user-selected keys discovered by the shared engine, with all choices initially selected, including multipart. For multiple offerings, keep the intersection with the preferences; without a match, keep the original offerings. Represent the choice as one ordered `select-contract-media` rule so it can be replayed and composed with extraction. Shared content is explicitly within this rule's scope; ordinary targeted rules keep their narrower safeguards. See [behavior and verification](transformations.md#contract-wide-media-preference). Broader selector scopes and per-operation exceptions remain future work.
+
 ## Desktop local reference input (2026-10-05)
 
 The owner clarified that opening a local desktop entry must resolve local relative component files automatically. Implement this in a native input adapter that uses shared-engine reference discovery, with a bounded worker and the existing source-identity protection. Automatic reads stay inside each selected file's directory tree, including resolved link targets; other locations remain explicit selections. This scope prevents a contract from reading arbitrary files or making network requests. Browser file selection remains unchanged. The existing build bundles the adapter and parser dependencies into the desktop distribution, without adding dependencies. See [behavior, limits and regression evidence](desktop-input.md).

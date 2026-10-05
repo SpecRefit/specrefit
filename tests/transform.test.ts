@@ -3,19 +3,19 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
 import { inspect, valueAt, type Value } from '../packages/engine/index.ts';
-import { transform, suggestSchemaName, type Rule } from '../packages/engine/transform.ts';
+import { transform, suggestSchemaName, type Rule, type MediaRule, type ExtractRule } from '../packages/engine/transform.ts';
 const yaml = readFileSync('tests/fixtures/transform.yaml', 'utf8');
 const content = '/paths/~1pets/post/requestBody/content';
 const schema = content + '/application~1json/schema';
 const source = (text = yaml, id = 'api.yaml') => ({ entry: id, sources: [{ id, text }] });
-function rules(input = source()): Rule[] {
+function rules(input = source()): (MediaRule | ExtractRule)[] {
   const r = inspect(input), document = r.entry;
   return [
     { id: 'extract', kind: 'extract-schema', target: { document, pointer: schema }, name: 'CreatePetRequest', expected: valueAt(r.documents[0].value, schema)!, onMissing: 'error' },
     { id: 'media', kind: 'select-media', target: { document, pointer: content }, expectedTypes: ['application/json', 'application/problem+json', 'application/xml'], keep: ['application/json', 'application/problem+json'], onMissing: 'error' },
   ];
 }
-const run = (input = source(), selected = rules(input)) => transform(input, { version: 1, rules: selected });
+const run = (input = source(), selected: Rule[] = rules(input)) => transform(input, { version: 1, rules: selected });
 
 for (const version of ['3.0.4', '3.1.2', '3.2.0']) for (const format of ['yaml', 'json']) test(`${version} ${format}: two rules preserve meaning, comments, extensions and source; byte-idempotent replay`, () => {
   const text = yaml.replace('3.1.2', version);
@@ -160,5 +160,5 @@ test('callback media targets belong to the nearest operation, not its enclosing 
   const selected:Rule[]=[{id:'callback',kind:'select-media',target:{document:'api.yaml',pointer:'/paths/~1pets/post/callbacks/notify/~1notice/post/requestBody/content'},onMissing:'error',expectedTypes:['application/json','text/plain'],keep:['application/json']}];
   const output=run(input,selected);
   assert.equal(output.files.length,1,JSON.stringify(output));
-  assert.equal(valueAt(parse(output.files[0].text),selected[0].target.pointer+'/text~1plain'),undefined);
+  assert.equal(valueAt(parse(output.files[0].text),(selected[0] as MediaRule).target.pointer+'/text~1plain'),undefined);
 });

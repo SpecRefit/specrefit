@@ -1,5 +1,5 @@
 import { canonical, child, displayId, limits, object, string, valueAt, type Inspection, type Item, type Location, type Operation, type Source, type Value } from '../engine/index.ts';
-import { suggestSchemaName, type Rule, type Preview } from '../engine/transform.ts';
+import { suggestSchemaName, contractMediaTypes, type Rule, type Preview, type ContractMediaRule } from '../engine/transform.ts';
 import type { Output } from '../engine/bundle.ts';
 import { saveReviewedOutput } from './export.ts';
 
@@ -301,6 +301,51 @@ export function mount(host: HTMLElement, sample: Source[]) {
   }
   function showRefit() {
     pane.replaceChildren(el('p', 'REPRODUCIBLE CHANGES', 'eyebrow'), el('h1', 'Rules and preview'), el('p', 'Rules run in the listed order on the original files. Bundling runs afterwards and also works without rules. Review the output, then export its exact files.', 'description'));
+    const media = el('fieldset', '', 'refit-controls'); media.append(el('legend', 'Media types for the whole contract'));
+    const offered = contractMediaTypes(report!);
+    const policy = rules.find((rule): rule is ContractMediaRule => rule.kind === 'select-contract-media');
+    const enabled = el('input'); enabled.type = 'checkbox'; enabled.checked = !!policy;
+    enabled.dataset.contractMediaToggle = '';
+    enabled.disabled = !offered.length && !policy;
+    const selectedTypes = policy?.keep ?? offered;
+    const changePolicy = (active: boolean, keep: string[]) => {
+      if (configDraft !== undefined) { fail('Preview the edited rules JSON before changing the contract-wide selection.'); return; }
+      if (active && !keep.length) { fail('Choose at least one media type to keep.'); return; }
+      if (policy) {
+        if (active) policy.keep = keep;
+        else rules.splice(rules.indexOf(policy), 1);
+      } else if (active) {
+        let id: string;
+        do { id = `rule-${++ruleSequence}`; } while (rules.some(r => r.id === id));
+        rules.unshift({ id, kind: 'select-contract-media', keep });
+      }
+      const focusedType = document.activeElement instanceof HTMLInputElement ? document.activeElement.dataset.mediaType : undefined;
+      preview = undefined; worker?.terminate(); generation++; clearFeedback(); showRefit();
+      const focus = focusedType === undefined ? pane.querySelector<HTMLInputElement>('[data-contract-media-toggle]') : [...pane.querySelectorAll<HTMLInputElement>('[data-media-type]')].find(input => input.dataset.mediaType === focusedType);
+      focus?.focus({ preventScroll: true });
+      announce('Media preference updated. Preview the rules to review the resulting contract.');
+    };
+    enabled.addEventListener('change', () => changePolicy(enabled.checked, selectedTypes));
+    media.append(label('Prefer selected media types across the whole contract', enabled));
+    const choices = el('fieldset'); choices.disabled = !policy; choices.append(el('legend', 'Offered request and response media types'));
+    for (const name of offered) {
+      const choice = el('input'); choice.type = 'checkbox'; choice.checked = selectedTypes.includes(name);
+      choice.dataset.mediaType = name;
+      choice.addEventListener('change', () => {
+        const keep = choice.checked ? [...selectedTypes, name] : selectedTypes.filter(type => type !== name);
+        if (!keep.length) { choice.checked = true; fail('Choose at least one media type to keep.'); return; }
+        changePolicy(true, keep);
+      });
+      choices.append(label(name, choice));
+      if (/^multipart\//i.test(name)) choices.append(el('p', 'Multipart can be needed for forms or file uploads. Keep it selected unless you deliberately want to remove it where another chosen type is offered.', 'muted'));
+    }
+    media.append(choices, el('p', 'All offered types start selected, including multipart. A request or response with just one type always keeps it. With multiple types, keep your matching choices; without a match, keep everything. Shared definitions, callbacks and webhooks are included. Your selection becomes one ordered rule below.', 'muted'));
+    if (!offered.length) media.append(el('p', 'This contract offers no request or response media types.', 'muted'));
+    const absent = policy?.keep.filter(type => !offered.includes(type)) ?? [];
+    if (absent.length) media.append(el('p', `Saved choices not offered by this contract: ${absent.join(', ')}. They remain in the saved rule for replay. Disable the selection to start again from the offered types.`, 'muted'));
+    media.disabled = configDraft !== undefined;
+    const draftNote = el('p', 'Preview the edited rules JSON to apply it before changing this selection.', 'muted'); draftNote.hidden = configDraft === undefined; media.append(draftNote);
+    pane.append(media);
     const settings = el('fieldset', '', 'refit-controls'); settings.append(el('legend', 'Output'));
     const bundled = el('input'); bundled.type = 'checkbox'; bundled.checked = outputSettings.bundle;
     const format = el('select'); format.disabled = !outputSettings.bundle;
@@ -321,18 +366,22 @@ export function mount(host: HTMLElement, sample: Source[]) {
     settings.append(label('Bundle external references into one file', bundled), label('Bundle format', format), el('p', 'Supply all referenced files first. Recursive models keep internal links. Your originals stay unchanged.', 'muted')); pane.append(settings);
     rules.forEach((rule, i) => {
       const card = el('article', '', 'definition-card');
-      card.append(el('h2', `${i + 1}. ${rule.kind === 'select-media' ? 'Keep ' + rule.keep.join(', ') : 'Extract ' + rule.name}`), el('p', `${displayId(rule.target.document)} · ${rule.target.pointer}`));
+      card.append(el('h2', `${i + 1}. ${rule.kind === 'extract-schema' ? 'Extract ' + rule.name : (rule.kind === 'select-contract-media' ? 'Prefer ' : 'Keep ') + rule.keep.join(', ')}`), el('p', rule.kind === 'select-contract-media' ? 'Whole contract · all request and response content, including shared definitions' : `${displayId(rule.target.document)} · ${rule.target.pointer}`));
       const edit = (action: () => void) => { action(); configDraft = undefined; preview = undefined; worker?.terminate(); generation++; showRefit(); };
       const up = button('Move up', () => edit(() => { [rules[i - 1], rules[i]] = [rules[i], rules[i - 1]]; })); up.disabled = i === 0;
       const down = button('Move down', () => edit(() => { [rules[i + 1], rules[i]] = [rules[i], rules[i + 1]]; })); down.disabled = i === rules.length - 1;
-      const missing = el('select');
-      for (const value of ['error', 'warning'] as const) { const option = el('option', value); option.value = value; option.selected = value === rule.onMissing; missing.append(option); }
-      missing.addEventListener('change', () => edit(() => { rule.onMissing = missing.value as 'error' | 'warning'; }));
-      card.append(up, down, button('Remove rule', () => edit(() => { rules.splice(i, 1); })), label('Missing target', missing)); pane.append(card);
+      card.append(up, down, button('Remove rule', () => edit(() => { rules.splice(i, 1); })));
+      if (rule.kind !== 'select-contract-media') {
+        const missing = el('select');
+        for (const value of ['error', 'warning'] as const) { const option = el('option', value); option.value = value; option.selected = value === rule.onMissing; missing.append(option); }
+        missing.addEventListener('change', () => edit(() => { rule.onMissing = missing.value as 'error' | 'warning'; }));
+        card.append(label('Missing target', missing));
+      }
+      pane.append(card);
     });
-    if (!rules.length) pane.append(el('p', 'Add media selection rules from a request or response, or explore an inline schema to extract a shared model.', 'notice'));
+    if (!rules.length) pane.append(el('p', 'Choose media types for the whole contract above, add a selection from a request or response, or explore an inline schema to extract a shared model.', 'notice'));
     const config = el('textarea'); config.rows = 8; config.spellcheck = false; config.value = configDraft ?? JSON.stringify({ version: 1, rules, output: outputSettings }, null, 2);
-    config.addEventListener('input', () => { configDraft = config.value; preview = undefined; worker?.terminate(); generation++; pane.querySelector('.preview-result')?.remove(); });
+    config.addEventListener('input', () => { configDraft = config.value; media.disabled = true; draftNote.hidden = false; preview = undefined; worker?.terminate(); generation++; pane.querySelector('.preview-result')?.remove(); });
     pane.append(label('Rules JSON (copy to save, paste to replay)', config), button('Preview these rules', () => {
       try {
         if (config.value.length > 4_000_000) throw new Error();
@@ -345,7 +394,10 @@ export function mount(host: HTMLElement, sample: Source[]) {
     for (const message of preview.diagnostics) output.append(el('p', message, 'warning'));
     for (const message of preview.exportDiagnostics ?? []) output.append(el('p', `Export unavailable: ${message}`, 'warning'));
     if (preview.exportPlan) output.append(el('p', `Entry document: ${preview.exportPlan.entry}. ${preview.exportPlan.files.length > 1 ? (window.specRefitDesktop ? 'Choose a separate output folder.' : 'Download the files together as a ZIP.') : 'Save the reviewed file directly.'}`, 'muted'), button('Export reviewed output', () => exportPreview()));
-    for (const change of preview.changes) output.append(el('p', `${change.rule} · ${change.status}: ${change.message}`, change.status === 'error' || change.status === 'warning' ? 'warning' : 'notice'));
+    for (const change of preview.changes) {
+      const context = rules.some(r => r.id === change.rule && r.kind === 'select-contract-media') ? ` ${displayId(change.target.document)} · ${change.target.pointer || '/'}` : '';
+      output.append(el('p', `${change.rule} · ${change.status}: ${change.message}${context}`, change.status === 'error' || change.status === 'warning' ? 'warning' : 'notice'));
+    }
     for (const file of preview.files) {
       const original = sources.find(s => canonical(s.id) === (preview?.configuration?.output?.bundle ? report!.entry : file.id))?.text ?? '';
       const details = el('details'); details.append(el('summary', `${displayId(file.id)} · ${file.text === original ? 'unchanged' : 'changed'}`));

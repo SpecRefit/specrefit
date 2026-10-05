@@ -14,7 +14,7 @@
     "build": "node scripts/build.mjs",
     "start": "node scripts/serve.mjs",
     "desktop": "electron .",
-    "test": "node --test tests/engine.test.ts tests/transform.test.ts tests/bundle.test.ts tests/export.test.ts tests/export-filesystem.test.mjs tests/desktop-import.test.mjs",
+    "test": "node --test tests/engine.test.ts tests/transform.test.ts tests/contract-media.test.ts tests/bundle.test.ts tests/export.test.ts tests/export-filesystem.test.mjs tests/desktop-import.test.mjs",
     "test:version": "node --test tests/version.test.mjs",
     "test:development": "node --test tests/development.test.mjs",
     "archive:development": "node scripts/archive-development.mjs",

@@ -1,5 +1,5 @@
 import { isMap, isScalar, parseDocument } from 'yaml';
-import { canonical, child, inspect, object, valueAt, type Operation, type Source, type Value } from './index.ts';
+import { canonical, child, inspect, object, valueAt, type Inspection, type Operation, type Source, type Value } from './index.ts';
 import { bundle, type Output } from './bundle.ts';
 import { prepareExport, type ExportPlan } from './export.ts';
 
@@ -7,7 +7,8 @@ export interface Target { document: string; pointer: string }
 interface BaseRule { id: string; target: Target; onMissing: 'error' | 'warning' }
 export interface MediaRule extends BaseRule { kind: 'select-media'; keep: string[]; expectedTypes: string[] }
 export interface ExtractRule extends BaseRule { kind: 'extract-schema'; name: string; expected: Value }
-export type Rule = MediaRule | ExtractRule;
+export interface ContractMediaRule { id: string; kind: 'select-contract-media'; keep: string[] }
+export type Rule = MediaRule | ExtractRule | ContractMediaRule;
 export interface Configuration { version: 1; rules: Rule[]; output?: Output }
 export interface Change { rule: string; status: 'changed' | 'already-applied' | 'unchanged' | 'warning' | 'error'; message: string; target: Target }
 export interface Preview { files: Source[]; changes: Change[]; diagnostics: string[]; configuration?: Configuration; exportPlan?: ExportPlan; exportDiagnostics?: string[] }
@@ -20,6 +21,24 @@ const same = (a: unknown, b: unknown): boolean => {
   return ka.length === kb.length && ka.every(k => Object.hasOwn(b, k) && same((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]));
 };
 const words = (s: string) => s.match(/[A-Za-z0-9]+/g)?.map(s => s[0].toUpperCase() + s.slice(1)).join('') || 'Model';
+function contractMediaTargets(report: Inspection): Target[] {
+  const documents = new Map(report.documents.map(d => [d.id, d.value]));
+  const targets = new Map<string, Target>();
+  for (const { location, role } of report.contexts) {
+    if (role !== 'body' && role !== 'response') continue;
+    const owner = valueAt(documents.get(location.document), location.pointer);
+    // Reference Object siblings do not declare an additional content map.
+    if (!object(owner) || Object.hasOwn(owner, '$ref') || !object(owner.content)) continue;
+    const target = { document: location.document, pointer: child(location.pointer, 'content') };
+    targets.set(JSON.stringify(target), target);
+  }
+  return [...targets.values()];
+}
+/** The editor offers exactly the request/response media keys the engine can select. */
+export function contractMediaTypes(report: Inspection): string[] {
+  const documents = new Map(report.documents.map(d => [d.id, d.value]));
+  return [...new Set(contractMediaTargets(report).flatMap(target => Object.keys(valueAt(documents.get(target.document), target.pointer) as object).filter(key => !key.startsWith('x-'))))].sort();
+}
 export function suggestSchemaName(op: Operation, pointer: string): string {
   const base = words(object(op.raw) && typeof op.raw.operationId === 'string' ? op.raw.operationId : `${op.method.toLowerCase()} ${op.path}`);
   const tail = tokens(pointer.slice(op.location.pointer.length));
@@ -32,14 +51,21 @@ function validate(config: unknown): config is Configuration {
   if (!object(config) || config.version !== 1 || !Array.isArray(config.rules) || config.rules.length > 128 || Object.keys(config).some(k => !['version', 'rules', 'output'].includes(k))) return false;
   if (config.output !== undefined && (!object(config.output) || typeof config.output.bundle !== 'boolean' || typeof config.output.format !== 'string' || !['yaml', 'json'].includes(config.output.format) || Object.keys(config.output).some(k => !['bundle', 'format'].includes(k)))) return false;
   const ids = new Set<string>();
+  let contractMedia = false;
+  const list = (v: unknown): v is string[] => Array.isArray(v) && v.length > 0 && v.length <= 256 && v.every(s => typeof s === 'string' && s.length > 0 && s.length <= 512 && !s.startsWith('x-')) && new Set(v).size === v.length;
   return config.rules.every(r => {
-    if (!object(r) || typeof r.id !== 'string' || !r.id || r.id.length > 160 || ids.has(r.id) || !object(r.target) ||
+    if (!object(r) || typeof r.id !== 'string' || !r.id || r.id.length > 160 || ids.has(r.id)) return false;
+    ids.add(r.id);
+    if (r.kind === 'select-contract-media') {
+      if (contractMedia) return false;
+      contractMedia = true;
+      return Object.keys(r).every(k => ['id', 'kind', 'keep'].includes(k)) && list(r.keep);
+    }
+    if (!object(r.target) ||
         typeof r.target.document !== 'string' || typeof r.target.pointer !== 'string' || !r.target.pointer.startsWith('/') || /~(?![01])/.test(r.target.pointer) ||
         r.target.pointer.length > 4096 || Object.keys(r.target).some(k => !['document', 'pointer'].includes(k)) || !['error', 'warning'].includes(String(r.onMissing))) return false;
-    ids.add(r.id);
     const allowed = ['id', 'kind', 'target', 'onMissing', ...(r.kind === 'select-media' ? ['keep', 'expectedTypes'] : ['name', 'expected'])];
     if (Object.keys(r).some(k => !allowed.includes(k))) return false;
-    const list = (v: unknown): v is string[] => Array.isArray(v) && v.length > 0 && v.length <= 256 && v.every(s => typeof s === 'string' && s.length > 0 && s.length <= 512) && new Set(v).size === v.length;
     if (r.kind === 'select-media') return list(r.keep) && list(r.expectedTypes);
     return r.kind === 'extract-schema' && typeof r.name === 'string' && /^[A-Za-z][A-Za-z0-9._-]{0,119}$/.test(r.name) && object(r.expected);
   });
@@ -68,7 +94,43 @@ export function transform(input: unknown, config: unknown): Preview {
     Object.defineProperty(parent, key, { value, enumerable: true, configurable: true, writable: true });
     if (d.ast) d.ast.setIn([...keys, key], d.ast.createNode(value)); dirty.add(doc);
   }
+  function selectMedia(rule: Rule, target: Target, keep: string[], expectedTypes?: string[]) {
+    const d = docs.get(target.document)!;
+    const current = valueAt(d.value, target.pointer);
+    if (!object(current)) throw new Error('Media selection must target a request or response content map.');
+    const note = (status: Change['status'], message: string) => result.changes.push({ rule: rule.id, status, message, target });
+    const types = Object.keys(current).filter(k => !k.startsWith('x-'));
+    if (expectedTypes && (!types.length || types.some(k => !expectedTypes.includes(k)))) throw new Error('Offered media types changed since this rule was created. Review the rule.');
+    const retained = types.filter(k => keep.includes(k));
+    if (!retained.length) { note('unchanged', 'None of the selected media types are offered; content is unchanged.'); return; }
+    const removed = types.filter(k => !keep.includes(k));
+    if (!removed.length) { note('already-applied', 'Only selected media types are present.'); return; }
+    if (expectedTypes && types.length !== expectedTypes.length) throw new Error('Offered media types changed since this rule was created. Review the rule.');
+    for (const key of removed) {
+      const removedPointer = child(target.pointer, key);
+      if (report.references.some(r => r.target?.document === target.document && under(r.target.pointer, removedPointer))) throw new Error('A removed media type is referenced elsewhere. Keep it or adjust the referring rule first.');
+    }
+    for (const key of removed) {
+      if (d.ast) note('warning', `Any YAML comments attached to removed media type ${key} are removed with it. Review the exact output.`);
+      delete current[key]; d.ast?.deleteIn(tokens(child(target.pointer, key)));
+    }
+    dirty.add(target.document); note('changed', `Keep ${retained.join(', ')}; remove ${removed.join(', ')}.`);
+  }
   for (const rule of config.rules) {
+    if (rule.kind === 'select-contract-media') {
+      let target: Target = { document: report.entry, pointer: '' };
+      try {
+        const targets = contractMediaTargets(report);
+        if (!targets.length) result.changes.push({ rule: rule.id, status: 'unchanged', message: 'No request or response content maps are offered.', target });
+        for (target of targets) selectMedia(rule, target, rule.keep);
+        report = inspect({ entry: report.entry, sources: sources() });
+        if (report.diagnostics.length) throw new Error('The transformed documents have diagnostics. No output is available.');
+      } catch (error) {
+        result.changes.push({ rule: rule.id, status: 'error', message: error instanceof Error ? error.message : 'Media selection failed safely.', target });
+        break;
+      }
+      continue;
+    }
     let target: Target;
     try { target = { document: canonical(rule.target.document), pointer: rule.target.pointer }; }
     catch { result.diagnostics.push(`Rule ${rule.id}: invalid document location.`); break; }
@@ -87,22 +149,7 @@ export function transform(input: unknown, config: unknown): Preview {
         const owners = [op.requestBody, ...op.responses.map(r => r.item)].filter(Boolean);
         if (!owners.some(i => i!.location.document === target.document && child(i!.location.pointer, 'content') === target.pointer) || !object(current))
           throw new Error('Media selection must target an inline request or response content map.');
-        const types = Object.keys(current).filter(k => !k.startsWith('x-'));
-        if (!types.length || types.some(k => !rule.expectedTypes.includes(k))) throw new Error('Offered media types changed since this rule was created. Review the rule.');
-        const retained = types.filter(k => rule.keep.includes(k));
-        if (!retained.length) { note('unchanged', 'None of the selected media types are offered; content is unchanged.'); continue; }
-        const removed = types.filter(k => !rule.keep.includes(k));
-        if (!removed.length) { note('already-applied', 'Only selected media types are present.'); continue; }
-        if (types.length !== rule.expectedTypes.length) throw new Error('Offered media types changed since this rule was created. Review the rule.');
-        for (const key of removed) {
-          const removedPointer = child(target.pointer, key);
-          if (report.references.some(r => r.target?.document === target.document && under(r.target.pointer, removedPointer))) throw new Error('A removed media type is referenced elsewhere. Keep it or adjust the referring rule first.');
-        }
-        for (const key of removed) {
-          if (d!.ast) note('warning', `Any YAML comments attached to removed media type ${key} are removed with it. Review the exact output.`);
-          delete current[key]; d!.ast?.deleteIn(tokens(child(target.pointer, key)));
-        }
-        dirty.add(target.document); note('changed', `Keep ${retained.join(', ')}; remove ${removed.join(', ')}.`);
+        selectMedia(rule, target, rule.keep, rule.expectedTypes);
       } else {
         if (!report.schemaLocations.some(l => l.document === target.document && l.pointer === target.pointer) || !object(current)) throw new Error('Select an inline schema object, not an arbitrary field.');
         const destination = child('/components/schemas', rule.name);

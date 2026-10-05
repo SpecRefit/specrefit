@@ -68,6 +68,11 @@ test('sandboxed Electron uses the same worker and UI without renderer privileges
     const actual = await page.evaluate(({input,config}) => new Promise((resolve,reject) => {const w=new Worker('./worker.js',{type:'module'});w.onmessage=e=>{w.terminate();resolve(e.data.preview)};w.onerror=reject;w.postMessage({action:'transform',input,config});}), {input:transformInput,config});
     assert.deepEqual(actual, transform(transformInput,config));
     assert.equal(actual.files.length, 1);
+    const mediaSources = await Promise.all(['media-preference.yaml', 'media-components.yaml'].map(async id => ({ id, text: await readFile(`tests/fixtures/${id}`, 'utf8') })));
+    const mediaInput = { entry: 'media-preference.yaml', sources: mediaSources };
+    const mediaConfig = { version: 1, rules: [{ id: 'contract-media', kind: 'select-contract-media', keep: ['application/xml', 'multipart/form-data'] }] };
+    const mediaPreview = await page.evaluate(({ input, config }) => new Promise((resolve, reject) => { const w = new Worker('./worker.js', { type: 'module' }); w.onmessage = e => { w.terminate(); resolve(e.data.preview); }; w.onerror = reject; w.postMessage({ action: 'transform', input, config }); }), { input: mediaInput, config: mediaConfig });
+    assert.deepEqual(mediaPreview, transform(mediaInput, mediaConfig));
     await page.screenshot({ path: 'artifacts/electron-operation.png', fullPage: true });
   } finally { await application.close(); }
 });
