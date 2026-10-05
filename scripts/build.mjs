@@ -2,6 +2,7 @@ import { build } from 'esbuild';
 import { mkdir, copyFile, readFile, writeFile } from 'node:fs/promises';
 import { buildVersion } from './version.mjs';
 const version = buildVersion();
+await build({ entryPoints: ['packages/desktop/import.ts'], outfile: 'dist/desktop/import.cjs', bundle: true, platform: 'node', mainFields: ['module', 'main'], format: 'cjs', target: ['node22'], legalComments: 'eof' });
 await mkdir('dist/web', { recursive: true });
 const sample = await Promise.all(['petstore.yaml', 'schemas/pet.yaml'].map(async id => ({ id, text: await readFile(`tests/fixtures/${id}`, 'utf8') })));
 await build({ define: { __SPECREFIT_BUILD__: JSON.stringify(version) }, entryPoints: { app: 'apps/web/app.ts', worker: 'apps/web/worker.ts' }, outdir: 'dist/web', bundle: true, platform: 'browser', format: 'esm', target: ['es2022'], legalComments: 'eof', plugins: [{ name: 'sample', setup(b) { b.onResolve({ filter: /sample\.json$/ }, () => ({ path: 'sample', namespace: 'sample' })); b.onLoad({ filter: /.*/, namespace: 'sample' }, () => ({ contents: JSON.stringify(sample), loader: 'json' })); } }] });

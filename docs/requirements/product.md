@@ -32,6 +32,7 @@ SpecRefit is independent of Fabrikt and other generators. It produces ordinary a
 
 - Supply a start document and all required referenced documents. Preserve original document locations and relative path structure; matching solely by basename is unsafe.
 - The editor shows missing references, lets the user provide the corresponding files and discovers further missing references recursively after each addition.
+- Selecting a local desktop contract must automatically supply its local relative reference files through the desktop adapter (owner clarification, 2026-10-05). The initial implementation limits automatic reads to the selected file's directory tree; references outside that scope remain explicit file selections. Browser input restrictions and optional network retrieval are separate concerns.
 - Support project input through multiple files with structure, including directory and ZIP import. Users can explicitly map a missing reference location to a supplied document.
 - Save reference-location-to-local-document mappings in the project configuration. Store project paths relative to the configuration where practical so projects can move between machines.
 - Optional explicit external retrieval is desirable and belongs outside the processing engine. Desktop/CLI can fetch where authorized and technically possible. Browser fetching is subject to browser restrictions; when unavailable, users upload the documents instead.

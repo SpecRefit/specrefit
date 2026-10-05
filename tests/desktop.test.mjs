@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { _electron as electron } from 'playwright';
-import { readFile, mkdtemp, writeFile, link, rm } from 'node:fs/promises';
+import { readFile, mkdtemp, writeFile, link, rm, mkdir } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { inspect, valueAt } from '../packages/engine/index.ts';
 import { transform } from '../packages/engine/transform.ts';
@@ -102,7 +102,7 @@ test('desktop exports through a scoped bridge, handles cancellation and protects
   try {
     const page=await application.firstWindow();
     await page.evaluate(()=>{location.hash='content';});
-    assert.deepEqual(await page.evaluate(()=>Object.keys(window.specRefitDesktop).sort()),['protectInputs','saveOutput']);
+    assert.deepEqual(await page.evaluate(()=>Object.keys(window.specRefitDesktop).sort()),['importLocalReferences','protectInputs','saveOutput']);
     await page.getByLabel('Open contract files',{exact:true}).setInputFiles(source);
     await page.getByRole('button',{name:'Rules and preview',exact:true}).click();
     await page.getByRole('button',{name:'Preview these rules'}).click();
@@ -148,4 +148,39 @@ test('desktop saves multiple reviewed files into the chosen folder without a ZIP
     assert.deepEqual(inspect({entry:expected.exportPlan.entry,sources:written}).diagnostics,[]);
     await assert.rejects(readFile(resolve(root,'specrefit-output.zip')),/ENOENT/);
   } finally {await application.close();await rm(root,{recursive:true,force:true});}
+});
+
+test('opening one desktop file loads its references and protects their hardlinks during bundled export', async () => {
+  const root = await mkdtemp(resolve('artifacts/desktop-references-'));
+  const source = join(root, 'api.json'), foundation = join(root, 'components/foundation-schemas.json'), workflow = join(root, 'components/workflow-schemas.json'), alias = join(root, 'alias.json'), output = join(root, 'result.yaml');
+  await mkdir(join(root, 'components'));
+  const files = {
+    'api.json': JSON.stringify({ openapi: '3.0.4', info: { title: 'Local reference test', version: '1' }, paths: {}, components: { schemas: { Foundation: { $ref: 'components/foundation-schemas.json#/Foundation' }, Workflow: { $ref: 'components/workflow-schemas.json#/Workflow' } } } }),
+    'components/foundation-schemas.json': '{"Foundation":{"type":"string"}}',
+    'components/workflow-schemas.json': '{"Workflow":{"type":"object","properties":{"foundation":{"$ref":"foundation-schemas.json#/Foundation"}}}}',
+  };
+  for (const [name, text] of Object.entries(files)) await writeFile(join(root, name), text);
+  await link(foundation, alias);
+  const application = await launch();
+  try {
+    const page = await application.firstWindow();
+    await page.getByLabel('Open contract files', { exact: true }).setInputFiles(source);
+    await page.locator('.toolbar').getByText('OpenAPI 3.0.4 · 3 files', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Diagnostics', exact: true }).click();
+    await page.getByText('No issues found by the available inspection checks.', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Rules and preview', exact: true }).click();
+    await page.getByLabel('Bundle external references into one file', { exact: true }).check();
+    await page.getByRole('button', { name: 'Preview these rules' }).click();
+    const save = page.getByRole('button', { name: 'Export reviewed output' });
+    await save.waitFor();
+    for (const filePath of [foundation, workflow, alias]) {
+      await application.evaluate(({ dialog }, filePath) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath }); }, filePath);
+      await save.click(); await page.getByRole('alert').filter({ hasText: 'source file' }).waitFor();
+    }
+    await application.evaluate(({ dialog }, filePath) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath }); }, output);
+    await save.click(); await page.getByRole('status').filter({ hasText: 'Reviewed output saved' }).waitFor();
+    const expected = transform({ entry: 'api.json', sources: Object.entries(files).map(([id, text]) => ({ id, text })) }, { version: 1, rules: [], output: { bundle: true, format: 'yaml' } });
+    assert.deepEqual(new Uint8Array(await readFile(output)), createOutput(expected.exportPlan).files[0].bytes);
+    for (const [name, text] of Object.entries(files)) assert.equal(await readFile(join(root, name), 'utf8'), text);
+  } finally { await application.close(); await rm(root, { recursive: true, force: true }); }
 });

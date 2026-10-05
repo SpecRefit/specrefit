@@ -16,6 +16,7 @@ for (const dir of [staging, output, temporary, destination]) {
 await mkdir(staging, { recursive: true }); await mkdir(temporary, { recursive: true });
 await cp('apps/desktop', join(staging, 'apps/desktop'), { recursive: true });
 await cp('dist/web', join(staging, 'dist/web'), { recursive: true });
+await cp('dist/desktop', join(staging, 'dist/desktop'), { recursive: true });
 await cp('LICENSE', join(staging, 'LICENSE'));
 await writeFile(join(staging, 'package.json'), JSON.stringify({ name: pkg.name, productName: 'SpecRefit', version: version.version, license: pkg.license, main: 'apps/desktop/main.cjs' }, null, 2));
 const packages = await packager({

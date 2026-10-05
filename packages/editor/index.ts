@@ -20,6 +20,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
   let ruleSequence = 0;
   let selected = 0, search = '', method = '', activeTag = '';
   let worker: Worker | undefined, generation = 0;
+  let importing = false;
   let pane: HTMLElement;
   const compactWindow = window.matchMedia('(max-width: 800px)');
   let navigationOpen = false;
@@ -50,7 +51,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
     navigationOpen = false; syncNavigation();
     pane.scrollTop = 0; pane.tabIndex = -1; pane.focus({ preventScroll: true });
   };
-  function process() {
+  function process(importDiagnostics: Inspection['diagnostics'] = []) {
     preview = undefined;
     host.querySelector('.preview-result')?.remove(); host.inert = true;
     clearFeedback();
@@ -65,25 +66,34 @@ export function mount(host: HTMLElement, sample: Source[]) {
       host.inert = false;
       if (event.data.error) { fail(event.data.error); return; }
       report = event.data.report; selected = Math.min(selected, Math.max(0, report!.operations.length - 1));
+      report!.diagnostics.push(...importDiagnostics);
       history.length = 0; render(); announce(`${report!.operations.length} operations. ${report!.diagnostics.length} diagnostics. Inspection is not a full specification validation.`);
     };
     current.onerror = () => { clearTimeout(timer); current.terminate(); if (run === generation) { host.inert = false; fail('The inspection worker could not start. Reload the app and try again.'); } };
     current.postMessage({ entry, sources });
   }
   async function importFiles(files: FileList | null, target?: string) {
-    if (!files?.length) return;
+    if (!files?.length || importing) return;
     const list = [...files];
     if (list.length + sources.length > limits.files || list.some(f => f.size > limits.fileBytes) || list.reduce((n, f) => n + f.size, sources.reduce((n, s) => n + new TextEncoder().encode(s.text).length, 0)) > limits.totalBytes) {
       fail(`Open at most ${limits.files} files, ${limits.fileBytes / 1_000_000} MB per file and ${limits.totalBytes / 1_000_000} MB in total. Your selection is ${list.reduce((n, f) => n + f.size, 0).toLocaleString('en-US')} bytes. No files were added.`); return;
     }
+    importing = true;
     try {
       const added = await Promise.all(list.map(async f => ({ id: target ?? canonical((f.webkitRelativePath || f.name).split('/').map(encodeURIComponent).join('/')), text: await f.text() })));
       if (new Set([...sources, ...added].map(s => canonical(s.id))).size !== sources.length + added.length) { fail('A file with this location is already open. Use a folder to retain distinct paths, or start a new project. No files were replaced.'); return; }
-      await window.specRefitDesktop?.protectInputs(list);
-      sources.push(...added);
-      if (!entry) entry = added.find(s => /(?:^|\/)(?:openapi|swagger|api)\.(?:ya?ml|json)$/i.test(s.id))?.id ?? added[0].id;
-      process();
-    } catch { fail('The selected file could not be read. No contract is uploaded to a server.'); }
+      const nextEntry = entry || added.find(s => /(?:^|\/)(?:openapi|swagger|api)\.(?:ya?ml|json)$/i.test(s.id))?.id || added[0].id;
+      let nextSources = [...sources, ...added];
+      let diagnostics: Inspection['diagnostics'] = [];
+      if (window.specRefitDesktop) {
+        host.inert = true; announce('Reading local reference files…');
+        const result = await window.specRefitDesktop.importLocalReferences(list, added.map(s => s.id), { entry: nextEntry, sources: nextSources });
+        nextSources = result.sources; diagnostics = result.diagnostics;
+      }
+      sources = nextSources; entry = nextEntry;
+      process(diagnostics);
+    } catch { host.inert = false; fail('The selected files or local references could not be read safely. Check file access and input limits, then try again. No files were added.'); }
+    finally { importing = false; }
   }
   function picker(title: string, folder = false, target?: string) {
     const input = el('input'); input.type = 'file'; input.multiple = !target; input.accept = '.json,.yaml,.yml';
@@ -375,6 +385,7 @@ export function mount(host: HTMLElement, sample: Source[]) {
     if (!report) return;
     pane.replaceChildren(el('p', 'INPUT REVIEW', 'eyebrow'), el('h1', 'Diagnostics'), el('p', 'This is a bounded inspection, not a complete OpenAPI or JSON Schema validation. Unsupported constructs remain in the source.', 'description'));
     const missing = [...new Set(report.references.flatMap(r => r.missing ? [r.missing] : []))];
+    if (missing.length && window.specRefitDesktop) pane.append(el('p', 'Local relative references are read inside the selected file’s folder and subfolders. For missing files, references outside that folder or remote locations, select the exact document below.', 'notice'));
     for (const uri of missing) {
       const card = el('article', '', 'definition-card'); card.append(el('h2', 'Supply a missing document'), el('p', displayId(uri)), picker(`Choose file for ${displayId(uri)}`, false, uri)); pane.append(card);
     }

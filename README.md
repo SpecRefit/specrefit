@@ -72,11 +72,13 @@ The production browser files are in `dist/web`; they can be served as static ass
 npm run desktop
 ```
 
+Desktop builds after 0.1.0 automatically read local relative references inside the selected file's folder and subfolders, including nested dependencies. **Diagnostics** still lets you supply files that are missing, outside that folder or mapped to remote URLs. All imported reference files are protected during native export. No network references are fetched automatically. See [desktop input boundaries and tests](docs/architecture/desktop-input.md).
+
 Build and test commands:
 
 ```bash
 npm run check          # TypeScript checks
-npm test               # Inspection and transformation regression cases
+npm test               # Inspection, transformations, native input and source protection
 npm run test:version   # Git-tag and development-version cases
 npm run test:development # Development artifact/publication checks
 npm run test:packaging # Complete native download-set validation

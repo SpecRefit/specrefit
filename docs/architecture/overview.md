@@ -31,7 +31,7 @@ docs/
   requirements/        Agreed product behavior
 ```
 
-Currently `packages/engine` owns in-memory document parsing, references, diagnostics, operation inspection, transformations and export planning; `packages/editor` owns the shared DOM interface. `apps/web` supplies the page and bounded worker, and `apps/desktop` loads the same built assets in sandboxed Electron. The browser file picker is shared by both wrappers. Desktop export uses a narrow source-registration and save bridge with native identity checks; see [export boundaries](export.md). The remaining modules above do not exist yet. Create modules as code gives them a reason to exist; do not create placeholder packages solely to match the diagram. Logical modules need not all become independently published packages.
+Currently `packages/engine` owns in-memory document parsing, references, diagnostics, operation inspection, transformations and export planning; `packages/editor` owns the shared DOM interface. `apps/web` supplies the page and bounded worker, and `apps/desktop` loads the same built assets in sandboxed Electron. The browser file picker is shared by both wrappers. `packages/desktop` supplies a bounded native reference-input adapter using shared-engine discovery; see [desktop input](desktop-input.md). Desktop export uses a narrow source-registration and save bridge with native identity checks; see [export boundaries](export.md). The remaining modules above do not exist yet. Create modules as code gives them a reason to exist; do not create placeholder packages solely to match the diagram. Logical modules need not all become independently published packages.
 
 ## Dependency direction
 
