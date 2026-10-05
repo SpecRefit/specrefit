@@ -17,6 +17,7 @@ SpecRefit is a local-first workspace for inspecting OpenAPI contracts, previewin
 - [ROADMAP.md](ROADMAP.md): sequencing, acceptance criteria and current next steps.
 - [Decisions](docs/architecture/decisions.md): accepted choices, provisional proposals and questions still requiring a decision.
 - [Project handoff](docs/project-handoff.md): repository locations, branding, hosting and how to resume development.
+- [Stable release runbook](docs/architecture/stable-releases.md): preparation, tag verification, asset publication and the current release checkpoint for continuation in a fresh chat.
 
 Read these documents before implementing features. They are intended to make a fresh clone sufficient to resume development without access to the original design conversation.
 
