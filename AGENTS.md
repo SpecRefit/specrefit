@@ -67,7 +67,7 @@ SonarQube is under consideration and the project should support its analysis and
 
 ## Documentation and handoff
 
-The owner requested GitHub release 0.2.0 on 2026-10-05, including all improvements since the published 0.1.0. This explicitly authorizes preparing the release, creating/pushing its annotated tag, verifying the actual tag build and assets, publishing it as stable Latest and updating the website after publication. It does not authorize merging the preparation PR, future stable versions or package registries. Release notes are in docs/releases/0.2.0.md; the reusable runbook and current checkpoint are in docs/architecture/stable-releases.md. At preparation time, 0.2.0 is not tagged or published. The owner merges the preparation PR; continue after verifying that merge and the successful main build, without asking again for already-authorized release publication.
+The owner authorized GitHub release 0.2.0 on 2026-10-05 and merged preparation PR #37. Release 0.2.0 is now published as stable Latest at tag commit `3dffeb3ff1d695fd79c14cf2b6bd57f6f199bfba`, after successful tag Build 37272119716 and local/remote verification of all seven assets. Do not recreate it or move its tag. Release notes are in docs/releases/0.2.0.md; the reusable runbook, publication evidence and current checkpoint are in docs/architecture/stable-releases.md. The authorization covers its website update and post-publication acceptance, but not merging product documentation PRs, future stable versions or package registries. Inspect live state before resuming already-authorized follow-up work; do not ask again merely because a new chat began.
 
 ### Stable release workflow and fresh-chat handoff
 

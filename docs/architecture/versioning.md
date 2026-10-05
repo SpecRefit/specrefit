@@ -26,7 +26,7 @@ On `play.specrefit.dev`, separate build-time metadata identifies the nearest rea
 
 `scripts/playground-version.mjs` writes `dist/web/playground-version.json` and embeds the same metadata in the application. This presentation does not change artifact versions, native package metadata or the shared engine. Desktop and locally served assets retain their existing version display. Publishing a stable GitHub release automatically dispatches a fresh Build on main; only a successful complete Build may deploy the refreshed playground. This refresh does not republish development downloads or roll main back to an older release. See [playground publication](playground.md).
 
-The version fixture suite also covers release ancestry, distance, published-tag filtering and release-trigger workflow guards. Browser tests cover release/development/no-release presentation, host scoping and narrow light/dark layouts. A real release-publication event can only be verified after the workflow is merged and a stable release is published.
+The version fixture suite also covers release ancestry, distance, published-tag filtering and release-trigger workflow guards. Browser tests cover release/development/no-release presentation, host scoping and narrow light/dark layouts. The actual 0.2.0 release event, complete main rebuild, Pages deployment and live release display were verified on 2026-10-05; see [publication evidence](stable-releases.md#020).
 
 ## Verification
 

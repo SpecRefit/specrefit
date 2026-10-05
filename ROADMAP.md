@@ -4,10 +4,10 @@ This roadmap sequences implementation; it does not remove the requirements in [p
 
 ## Current state
 
-- [ ] Publish owner-authorized 0.2.0 after the release-preparation PR is merged and its tag passes the complete Build gate. [Release notes](docs/releases/0.2.0.md) collect the improvements since 0.1.0; [the release checkpoint and runbook](docs/architecture/stable-releases.md) describe the remaining actions. No 0.2.0 tag or release has been created during preparation.
+- [x] Publish [0.2.0](https://github.com/SpecRefit/specrefit/releases/tag/v0.2.0) as stable Latest after [tag Build 37272119716](https://github.com/SpecRefit/specrefit/actions/runs/37272119716), with all seven asset sizes and SHA-256 digests verified before publication. [Release notes](docs/releases/0.2.0.md) describe the improvements since 0.1.0; [publication evidence and the reusable runbook](docs/architecture/stable-releases.md) support continuation in a fresh chat.
 
-- [x] Implement hosted cache freshness before editor startup, content-addressed assets and actionable failures, with stale-page regression cases; see [cache behavior and rollout limits](docs/architecture/playground.md#cache-freshness). Live deployment acceptance follows merge.
-- [x] Implement hosted release identification and a development banner with commit identity; see [versioning behavior and verification](docs/architecture/versioning.md#hosted-playground-presentation). Stable publication dispatches a complete main rebuild; live event acceptance awaits the next stable release after merge.
+- [x] Implement hosted cache freshness before editor startup, content-addressed assets and actionable failures, with stale-page regression cases; see [cache behavior and rollout limits](docs/architecture/playground.md#cache-freshness). Live hosted acceptance passed with 0.2.0; see [release evidence](docs/architecture/stable-releases.md#020).
+- [x] Implement hosted release identification and a development banner with commit identity; see [versioning behavior and verification](docs/architecture/versioning.md#hosted-playground-presentation). The actual 0.2.0 release event, full main rebuild and live version display were verified; see [release evidence](docs/architecture/stable-releases.md#020).
 - [x] Agree product scope, reproducibility constraints and repository boundaries.
 - [x] Record requirements, architecture direction, development instructions and open decisions in the product repository.
 - [x] Select Apache License 2.0 and add its official text to LICENSE.
